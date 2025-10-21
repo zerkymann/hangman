@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplayer Hangman</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
+    #word { font-size: 2rem; letter-spacing: 5px; margin: 20px; }
+    #letters button { margin: 5px; padding: 10px; font-size: 1.2rem; }
+    #link { margin: 10px; color: blue; }
+  </style>
+</head>
+<body>
+  <h1>🔤 Multiplayer Hangman</h1>
+  <div id="setup">
+    <input id="wordInput" placeholder="Enter a word for your friend..." />
+    <button id="createBtn">Create Game</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <div id="word"></div>
+    <div id="letters"></div>
+    <div id="message"></div>
+    <p id="link"></p>
+  </div>
+
+  <script>
+    // 🔥 Initialize Firebase (replace with your own)
+const firebaseConfig = {
+  apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
+  authDomain: "hangman-6a99e.firebaseapp.com",
+  databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "hangman-6a99e",
+  storageBucket: "hangman-6a99e.firebasestorage.app",
+  messagingSenderId: "992689481911",
+  appId: "1:992689481911:web:6461e931ba4d96879ec532",
+  measurementId: "G-W1HFVTC23L"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const setup = document.getElementById("setup");
+    const gameDiv = document.getElementById("game");
+    const wordDiv = document.getElementById("word");
+    const lettersDiv = document.getElementById("letters");
+    const msg = document.getElementById("message");
+    const linkEl = document.getElementById("link");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get("game");
+
+    if (gameId) {
+      // 🎮 Joiner mode
+      setup.style.display = "none";
+      gameDiv.style.display = "block";
+      startGuessing(gameId);
+    }
+
+    document.getElementById("createBtn").onclick = async () => {
+      const word = document.getElementById("wordInput").value.toUpperCase();
+      if (!word.match(/^[A-Z]+$/)) return alert("Letters only!");
+      const id = "hangman-" + Math.random().toString(36).substr(2, 5);
+      await db.ref("games/" + id).set({
+        word,
+        guesses: [],
+        wrong: 0,
+        over: false
+      });
+      setup.style.display = "none";
+      gameDiv.style.display = "block";
+      linkEl.innerHTML = `Share this link: <a href="?game=${id}">${location.origin}${location.pathname}?game=${id}</a>`;
+      showWord(word, []);
+      listenToGame(id, word);
+    };
+
+    function startGuessing(id) {
+      db.ref("games/" + id).get().then(snap => {
+        if (!snap.exists()) {
+          msg.textContent = "Game not found.";
+          return;
+        }
+        const data = snap.val();
+        showWord(data.word, data.guesses);
+        createLetterButtons(id);
+        listenToGame(id, data.word);
+      });
+    }
+
+    function showWord(word, guesses) {
+      wordDiv.textContent = word.split("").map(l => guesses.includes(l) ? l : "_").join(" ");
+    }
+
+    function createLetterButtons(id) {
+      lettersDiv.innerHTML = "";
+      for (let i = 65; i <= 90; i++) {
+        const letter = String.fromCharCode(i);
+        const btn = document.createElement("button");
+        btn.textContent = letter;
+        btn.onclick = async () => {
+          btn.disabled = true;
+          const snap = await db.ref("games/" + id).get();
+          const data = snap.val();
+          if (data.over) return;
+          if (!data.guesses.includes(letter)) {
+            data.guesses.push(letter);
+            if (!data.word.includes(letter)) data.wrong++;
+            if (data.wrong >= 6 || data.word.split("").every(l => data.guesses.includes(l))) data.over = true;
+            await db.ref("games/" + id).set(data);
+          }
+        };
+        lettersDiv.appendChild(btn);
+      }
+    }
+
+    function listenToGame(id, word) {
+      db.ref("games/" + id).on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+        showWord(data.word, data.guesses);
+        if (data.over) {
+          msg.textContent = data.wrong >= 6 ? `💀 You lost! Word was ${data.word}` : "🎉 You won!";
+          document.querySelectorAll("button").forEach(b => (b.disabled = true));
+        }
+      });
+    }
+  </script>
+</body>
+</html>
