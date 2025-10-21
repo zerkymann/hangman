@@ -64,7 +64,7 @@
       const id = "hangman-" + Math.random().toString(36).substr(2, 5);
       await db.ref("games/" + id).set({
         word,
-        guesses: [], // ✅ ensure guesses exists
+        guesses: [], // ✅ initialize guesses
         wrong: 0,
         over: false
       });
@@ -83,14 +83,16 @@
           return;
         }
         const data = snap.val();
-        showWord(data.word, data.guesses || []);
+        // ✅ ensure guesses exists
+        if (!Array.isArray(data.guesses)) data.guesses = [];
+        showWord(data.word, data.guesses);
         createLetterButtons(id);
         listenToGame(id, data.word);
       });
     }
 
     function showWord(word, guesses) {
-      guesses = guesses || []; // default to empty array
+      guesses = Array.isArray(guesses) ? guesses : []; // always array
       wordDiv.textContent = word
         .split("")
         .map(l => guesses.includes(l) ? l : "_")
@@ -107,7 +109,7 @@
           btn.disabled = true;
           const snap = await db.ref("games/" + id).get();
           const data = snap.val();
-          if (!data.guesses) data.guesses = []; // ✅ ensure array exists
+          if (!Array.isArray(data.guesses)) data.guesses = [];
           if (data.over) return;
           if (!data.guesses.includes(letter)) {
             data.guesses.push(letter);
@@ -124,7 +126,7 @@
       db.ref("games/" + id).on("value", snap => {
         const data = snap.val();
         if (!data) return;
-        showWord(data.word, data.guesses || []);
+        showWord(data.word, Array.isArray(data.guesses) ? data.guesses : []);
         if (data.over) {
           msg.textContent = data.wrong >= 6 ? `💀 You lost! Word was ${data.word}` : "🎉 You won!";
           document.querySelectorAll("button").forEach(b => (b.disabled = true));
