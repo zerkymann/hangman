@@ -458,7 +458,10 @@ newWordBtn.onclick = async () => {
   }
 
   const newWord = (prompt("Ange ett nytt ord:") || "").toUpperCase();
-  if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
+  if (!newWord.match(/^[A-ZÅÄÖ]+$/)) {
+    alert("Endast bokstäver (A–Ö) tillåtna!");
+    return;
+  }
 
   const nextTurn = data.turn === "host" ? "guest" : "host";
   await db.ref("games/" + gameId).set({
@@ -473,16 +476,10 @@ newWordBtn.onclick = async () => {
 
   // 🟢 Rebuild the alphabet buttons immediately
   createLetterButtons(gameId);
-}; // ✅ closes newWordBtn.onclick
+}; // closes newWordBtn.onclick
 
-}; // ✅ closes window.onload
+}; // closes window.onload
 
 </script>
 </body>
 </html>
-
-
-
-
-
-
