@@ -1,69 +1,114 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hänga gubbe — Multiplayer</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f4f4f4;
-      padding: 20px;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hänga gubbe — Multiplayer</title>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<style>
+  body {
+    font-family: sans-serif;
+    text-align: center;
+    background: #f4f4f4;
+    padding: 20px;
+  }
+
+  #word {
+    font-size: 6vw;
+    letter-spacing: 0.5em;
+    margin: 20px 0;
+    word-wrap: break-word;
+  }
+
+  #letters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin: 10px 0;
+  }
+
+  #letters button {
+    padding: 1rem;
+    font-size: 1.2rem;
+    min-width: 40px;
+    flex: 1 1 40px;
+    border-radius: 8px;
+  }
+
+  #message {
+    font-size: 5vw;
+    margin: 15px 0;
+  }
+
+  #link {
+    margin: 10px 0;
+    color: blue;
+    word-break: break-word;
+  }
+
+  input, button {
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin: 5px;
+  }
+
+  #hangman {
+    width: 80%;
+    max-width: 300px;
+    height: auto;
+    aspect-ratio: 200/250;
+    margin: 20px auto;
+    border: 1px solid #ccc;
+    background: white;
+  }
+
+  #restartBtn, #newWordBtn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    display: none;
+  }
+
+  @media (max-width: 600px) {
     #word {
-      font-size: 2rem;
-      letter-spacing: 5px;
-      margin: 20px;
+      font-size: 8vw;
+      letter-spacing: 0.3em;
     }
     #letters button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 1.2rem;
-    }
-    #link {
-      margin: 10px;
-      color: blue;
+      padding: 0.6rem;
+      font-size: 1rem;
     }
     #hangman {
-      width: 200px;
-      height: 250px;
-      margin: 20px auto;
-      border: 1px solid #ccc;
-      background: white;
+      width: 90%;
+      max-width: 250px;
     }
-    #restartBtn, #newWordBtn {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 1rem;
-      display: none;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <h1>🇸🇪 Hänga gubbe — Multiplayer</h1>
+<h1>🇸🇪 Hänga gubbe — Multiplayer</h1>
 
-  <div id="setup">
-    <input id="wordInput" placeholder="Skriv ett ord..." />
-    <button id="createBtn">Skapa spel</button>
-  </div>
+<div id="setup">
+  <input id="wordInput" placeholder="Skriv ett ord..." />
+  <button id="createBtn">Skapa spel</button>
+</div>
 
-  <div id="game" style="display:none;">
-    <canvas id="hangman"></canvas>
-    <div id="word"></div>
-    <div id="letters"></div>
-    <div id="message"></div>
-    <p id="link"></p>
-    <button id="restartBtn">🔁 Spela igen</button>
-    <button id="newWordBtn">✍️ Välj nytt ord</button>
-  </div>
+<div id="game" style="display:none;">
+  <canvas id="hangman"></canvas>
+  <div id="word"></div>
+  <div id="letters"></div>
+  <div id="message"></div>
+  <p id="link"></p>
+  <button id="restartBtn">🔁 Spela igen</button>
+  <button id="newWordBtn">✍️ Välj nytt ord</button>
+</div>
 
-  <script>
-    // 🔥 Firebase setup (replace with your own)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
   authDomain: "hangman-6a99e.firebaseapp.com",
   databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "hangman-6a99e",
@@ -71,171 +116,94 @@
   messagingSenderId: "992689481911",
   appId: "1:992689481911:web:6461e931ba4d96879ec532",
   measurementId: "G-W1HFVTC23L"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    const setup = document.getElementById("setup");
-    const gameDiv = document.getElementById("game");
-    const wordDiv = document.getElementById("word");
-    const lettersDiv = document.getElementById("letters");
-    const msg = document.getElementById("message");
-    const linkEl = document.getElementById("link");
-    const restartBtn = document.getElementById("restartBtn");
-    const newWordBtn = document.getElementById("newWordBtn");
-    const canvas = document.getElementById("hangman");
-    const ctx = canvas.getContext("2d");
+const setup = document.getElementById("setup");
+const gameDiv = document.getElementById("game");
+const wordDiv = document.getElementById("word");
+const lettersDiv = document.getElementById("letters");
+const msg = document.getElementById("message");
+const linkEl = document.getElementById("link");
+const restartBtn = document.getElementById("restartBtn");
+const newWordBtn = document.getElementById("newWordBtn");
+const canvas = document.getElementById("hangman");
+const ctx = canvas.getContext("2d");
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameId = urlParams.get("game");
+const urlParams = new URLSearchParams(window.location.search);
+const gameId = urlParams.get("game");
+let isHost = false;
+const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
 
-    let isHost = false;
-    const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
+document.getElementById("createBtn").onclick = async () => {
+  const word = document.getElementById("wordInput").value.toUpperCase();
+  if (!word.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
+  const id = "hangman-" + Math.random().toString(36).substr(2,5);
+  isHost = true;
+  await db.ref("games/" + id).set({word, guesses: [], wrong: 0, over: false});
+  window.location.href = `${location.origin}${location.pathname}?game=${id}`;
+};
 
-    // 🧭 Host creates game
-    document.getElementById("createBtn").onclick = async () => {
-      const word = document.getElementById("wordInput").value.toUpperCase();
-      if (!word.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
-      const id = "hangman-" + Math.random().toString(36).substr(2, 5);
-      isHost = true;
-      await db.ref("games/" + id).set({
-        word,
-        guesses: [],
-        wrong: 0,
-        over: false
-      });
-      window.location.href = `${location.origin}${location.pathname}?game=${id}`;
-    };
+if (gameId) {
+  setup.style.display = "none";
+  gameDiv.style.display = "block";
+  startGame(gameId);
+}
 
-    if (gameId) {
-      setup.style.display = "none";
-      gameDiv.style.display = "block";
-      startGame(gameId);
-    }
+function startGame(id) {
+  db.ref("games/" + id).get().then(snap => {
+    if (!snap.exists()) { msg.textContent="❌ Spelet kunde inte hittas."; return; }
+    const data = snap.val();
+    showWord(data.word, data.guesses);
+    createLetterButtons(id);
+    drawHangman(data.wrong);
+    listenToGame(id);
+    linkEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${id}">${location.origin}${location.pathname}?game=${id}</a>`;
+  });
+}
 
-    function startGame(id) {
-      db.ref("games/" + id).get().then(snap => {
-        if (!snap.exists()) {
-          msg.textContent = "❌ Spelet kunde inte hittas.";
-          return;
-        }
-        const data = snap.val();
-        showWord(data.word, data.guesses);
-        createLetterButtons(id);
-        drawHangman(data.wrong);
-        listenToGame(id);
-        linkEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${id}">${location.origin}${location.pathname}?game=${id}</a>`;
-      });
-    }
+function showWord(word, guesses) {
+  guesses = guesses || [];
+  wordDiv.textContent = word.split("").map(l => guesses.includes(l) ? l : "_").join(" ");
+}
 
-    function showWord(word, guesses) {
-      guesses = guesses || [];
-      wordDiv.textContent = word
-        .split("")
-        .map(l => guesses.includes(l) ? l : "_")
-        .join(" ");
-    }
-
-    function createLetterButtons(id) {
-      lettersDiv.innerHTML = "";
-      letters.forEach(letter => {
-        const btn = document.createElement("button");
-        btn.textContent = letter;
-        btn.onclick = async () => {
-          btn.disabled = true;
-          const snap = await db.ref("games/" + id).get();
-          const data = snap.val();
-          if (data.over) return;
-          if (!data.guesses.includes(letter)) {
-            data.guesses.push(letter);
-            if (!data.word.includes(letter)) data.wrong++;
-            if (data.wrong >= 6 || data.word.split("").every(l => data.guesses.includes(l))) data.over = true;
-            await db.ref("games/" + id).set(data);
-          }
-        };
-        lettersDiv.appendChild(btn);
-      });
-    }
-
-    function listenToGame(id) {
-      db.ref("games/" + id).on("value", snap => {
-        const data = snap.val();
-        if (!data) return;
-        showWord(data.word, data.guesses);
-        drawHangman(data.wrong);
-
-        document.querySelectorAll("#letters button").forEach(b => {
-          if (data.guesses.includes(b.textContent)) b.disabled = true;
-        });
-
-        if (data.over) {
-          msg.textContent = data.wrong >= 6
-            ? `💀 Du förlorade! Ordet var ${data.word}`
-            : "🎉 Du vann!";
-          restartBtn.style.display = "inline-block";
-          newWordBtn.style.display = "inline-block"; // everyone can pick new word
-        } else {
-          restartBtn.style.display = "none";
-          newWordBtn.style.display = "none";
-        }
-      });
-    }
-
-    function drawHangman(wrong) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(10, 240); ctx.lineTo(190, 240);
-      ctx.moveTo(50, 240); ctx.lineTo(50, 20);
-      ctx.lineTo(130, 20);
-      ctx.lineTo(130, 50);
-      ctx.stroke();
-
-      if (wrong > 0) {
-        ctx.beginPath(); ctx.arc(130, 70, 20, 0, Math.PI*2); ctx.stroke(); // head
-      }
-      if (wrong > 1) { ctx.moveTo(130,90); ctx.lineTo(130,160); ctx.stroke(); } // body
-      if (wrong > 2) { ctx.moveTo(130,110); ctx.lineTo(100,140); ctx.stroke(); } // left arm
-      if (wrong > 3) { ctx.moveTo(130,110); ctx.lineTo(160,140); ctx.stroke(); } // right arm
-      if (wrong > 4) { ctx.moveTo(130,160); ctx.lineTo(110,200); ctx.stroke(); } // left leg
-      if (wrong > 5) { ctx.moveTo(130,160); ctx.lineTo(150,200); ctx.stroke(); } // right leg
-    }
-
-    // 🔁 Restart with same word
-    restartBtn.onclick = async () => {
-      const snap = await db.ref("games/" + gameId).get();
+function createLetterButtons(id) {
+  lettersDiv.innerHTML = "";
+  letters.forEach(letter => {
+    const btn = document.createElement("button");
+    btn.textContent = letter;
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      const snap = await db.ref("games/" + id).get();
       const data = snap.val();
-      if (!data) return;
-      data.guesses = [];
-      data.wrong = 0;
-      data.over = false;
-      await db.ref("games/" + gameId).set(data);
-      msg.textContent = "";
-      restartBtn.style.display = "none";
-      newWordBtn.style.display = "none";
-      createLetterButtons(gameId);
-      drawHangman(0);
-    };
-
-    // ✍️ Any player chooses new word after game over
-    newWordBtn.onclick = async () => {
-      const newWord = prompt("Ange ett nytt ord:").toUpperCase();
-      if (!newWord.match(/^[A-ZÅÄÖ]+$/)) {
-        alert("Endast bokstäver (A-Ö) tillåtna!");
-        return;
+      if (data.over) return;
+      if (!data.guesses.includes(letter)) {
+        data.guesses.push(letter);
+        if (!data.word.includes(letter)) data.wrong++;
+        if (data.wrong >= 6 || data.word.split("").every(l => data.guesses.includes(l))) data.over = true;
+        await db.ref("games/" + id).set(data);
       }
-      await db.ref("games/" + gameId).set({
-        word: newWord,
-        guesses: [],
-        wrong: 0,
-        over: false
-      });
-      msg.textContent = "";
+    });
+    lettersDiv.appendChild(btn);
+  });
+}
+
+function listenToGame(id) {
+  db.ref("games/" + id).on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+    showWord(data.word, data.guesses);
+    drawHangman(data.wrong);
+
+    document.querySelectorAll("#letters button").forEach(b => {
+      if (data.guesses.includes(b.textContent)) b.disabled = true;
+    });
+
+    if (data.over) {
+      msg.textContent = data.wrong>=6?`💀 Du förlorade! Ordet var ${data.word}`:"🎉 Du vann!";
+      restartBtn.style.display = "inline-block";
+      newWordBtn.style.display = "inline-block";
+    } else {
       restartBtn.style.display = "none";
-      newWordBtn.style.display = "none";
-      createLetterButtons(gameId);
-      drawHangman(0);
-    };
-  </script>
-</body>
-</html>
+      newWordBtn
