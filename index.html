@@ -9,119 +9,241 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 
   <style>
-    :root{
-      --bg1:#0d0d0f;--bg2:#1a1a1f;
-      --panel:rgba(255,255,255,0.05);
-      --text:#fff;--text-dim:#bdbdbd;
-      /* interactive gradient */
-      --grad-a:#a855f7; /* violet */
-      --grad-b:#ec4899; /* magenta */
-      --gold:#f5a623;  /* keep hangman/scoreboard neutral warm */
+    :root {
+      --bg1: #0d0d0f;
+      --bg2: #1a1a1f;
+      --panel: rgba(255,255,255,0.05);
+      --text: #ffffff;
+      --text-dim: #bdbdbd;
+
+      /* Interactive gradient */
+      --grad-a: #a855f7; /* violet */
+      --grad-b: #ec4899; /* magenta */
     }
 
-    /* Page */
-    body{
-      font-family:"Poppins",sans-serif;
-      background:linear-gradient(-45deg,#0d0d0f,#1a1a1f,#17171b,#1a1a1f);
-      background-size:400% 400%;
-      animation:gradientShift 18s ease infinite;
-      color:var(--text);
-      display:flex;align-items:center;justify-content:center;
-      height:100dvh;margin:0;overflow:hidden;padding:0 10px;
-    }
-    @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-
-    /* Card */
-    #gameContainer{
-      background:var(--panel);backdrop-filter:blur(12px);
-      width:100%;max-width:520px;height:95%;max-height:95dvh;
-      border-radius:20px;box-shadow:0 0 25px rgba(0,0,0,.6);
-      padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;
+    /* Static dark background (performance-friendly) */
+    body {
+      font-family: "Poppins", sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, #17171b, #0f0f12 40%, #0b0b0d 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100dvh;
+      margin: 0;
+      overflow: hidden;
+      padding: 0 10px;
     }
 
-    h1{
-      margin:0;text-align:center;font-weight:600;
-      font-size:clamp(1.5rem,5vw,2rem);
-      color:transparent;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text;background-clip:text;
-      text-shadow:0 0 18px rgba(236,72,153,.2);
+    /* Card container */
+    #gameContainer {
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 520px;
+      height: 95%;
+      max-height: 95dvh;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
     }
 
-    /* Scoreboard (neutral look) */
-    #scoreboard{
-      display:flex;justify-content:space-between;align-items:center;
-      gap:10px;padding:8px 12px;border-radius:12px;
-      background:rgba(255,255,255,0.08);color:var(--gold);
-      font-weight:600;font-size:clamp(.85rem,3.3vw,1rem);
-    }
-    #scoreboard span.score{display:inline-block;transition:transform .25s ease}
-
-    /* Game canvas (auto-scaling) */
-    #hangZone{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;min-height:0;}
-    #hangman{
-      width:min(80%,300px);aspect-ratio:200/250;
-      background:#111;border:1px solid #333;border-radius:10px;
-      box-shadow:inset 0 0 15px rgba(0,0,0,.35);
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-weight: 600;
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      color: transparent;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-shadow: 0 0 18px rgba(236,72,153,0.18);
     }
 
-    /* Word + turn */
-    #word{letter-spacing:.25em;word-break:break-word;
-      font-size:clamp(1.2rem,5vw,1.8rem);text-align:center}
-    #turnIndicator{font-weight:600;font-size:clamp(.95rem,3.2vw,1.05rem)}
-
-    /* Keyboard (no scrollbars; perfect wrap) */
-    #letters{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(34px,1fr));
-      gap:6px;align-items:center;justify-items:center;
-      padding:6px 2px;user-select:none;
+    /* Scoreboard */
+    #scoreboard {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      font-weight: 600;
+      font-size: clamp(0.85rem, 3.3vw, 1rem);
+      color: transparent;
+      background-image: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      -webkit-background-clip: text;
+      background-clip: text;
     }
-    #letters button{
-      width:100%;min-width:34px;padding:.5rem .2rem;
-      font-size:clamp(.8rem,3.2vw,1rem);font-weight:700;color:#111;
-      border:none;border-radius:8px;cursor:pointer;position:relative;overflow:hidden;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 6px 18px rgba(168,85,247,.25);
-      transition:transform .15s ease,filter .15s ease,opacity .15s ease;
-      /* dynamic shine */
-      background-size:200% 200%;animation:shineMove 5s ease infinite;
+    #scoreboard span.score {
+      display: inline-block;
+      transition: transform 0.25s ease;
     }
-    @keyframes shineMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-    #letters button:hover:not(:disabled){transform:translateY(-2px)}
-    #letters button:disabled{opacity:.35;cursor:default;filter:saturate(.6)}
+    #youAre {
+      margin-top: 4px;
+      font-size: 0.9rem;
+      opacity: 0.85;
+      color: var(--text-dim);
+    }
 
-    /* Turn pulse (interactive only) */
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,85,247,.35)}70%{box-shadow:0 0 0 10px rgba(168,85,247,0)}100%{box-shadow:0 0 0 0 rgba(168,85,247,0)}}
-    #letters.activeTurn button:not(:disabled){animation:shineMove 5s ease infinite,pulse 1.6s infinite}
+    /* Layout zone for canvas + word */
+    #hangZone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Auto-scaling canvas */
+    #hangman {
+      width: min(80%, 300px);
+      aspect-ratio: 200 / 250;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 10px;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.35);
+      display: block;
+    }
+
+    #word {
+      letter-spacing: 0.25em;
+      word-break: break-word;
+      font-size: clamp(1.2rem, 5vw, 1.8rem);
+      text-align: center;
+    }
+
+    /* Turn indicator (gradient text) */
+    #turnIndicator {
+      font-weight: 600;
+      font-size: clamp(0.95rem, 3.2vw, 1.05rem);
+      color: transparent;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    /* Keyboard (no scrollbars; fits any width) */
+    #letters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+      gap: 6px;
+      align-items: center;
+      justify-items: center;
+      padding: 6px 2px;
+      user-select: none;
+    }
+    #letters button {
+      width: 100%;
+      min-width: 34px;
+      padding: 0.5rem 0.2rem;
+      font-size: clamp(0.8rem, 3.2vw, 1rem);
+      font-weight: 700;
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      background-size: 200% 200%;
+      animation: shineMove 5s ease infinite;
+      box-shadow: 0 6px 18px rgba(168,85,247,0.25);
+      transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+    }
+    @keyframes shineMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    #letters button:hover:not(:disabled) { transform: translateY(-2px); }
+    #letters button:disabled { opacity: 0.35; cursor: default; filter: saturate(0.7); }
+
+    /* Turn pulse on interactive elements */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(168,85,247,0.35); }
+      70% { box-shadow: 0 0 0 10px rgba(168,85,247,0); }
+      100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+    }
+    #letters.activeTurn button:not(:disabled) {
+      animation: shineMove 5s ease infinite, pulse 1.6s infinite;
+    }
 
     /* Guess feedback */
-    #letters button.good{outline:2px solid #22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.25)}
-    #letters button.bad{outline:2px solid #ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.25)}
+    #letters button.good {
+      outline: 2px solid #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
+    }
+    #letters button.bad {
+      outline: 2px solid #ef4444;
+      box-shadow: 0 0 0 4px rgba(239,68,68,0.25);
+    }
 
     /* Messages */
-    #message{color:var(--gold);text-align:center;min-height:1.4em;transition:opacity .35s ease}
-    .fade{opacity:0}
+    #message {
+      color: var(--text);
+      text-align: center;
+      min-height: 1.4em;
+      transition: opacity 0.35s ease;
+      opacity: 0.9;
+    }
+    .fade { opacity: 0; }
 
     /* Setup inputs */
-    #setup input,#setup button{
-      font-family:"Poppins",sans-serif;font-weight:600;border:none;border-radius:10px;
-      padding:.9rem 1rem;font-size:clamp(.95rem,3.5vw,1rem);outline:none;
+    #setup input, #setup button {
+      font-family: "Poppins", sans-serif;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      font-size: clamp(0.95rem, 3.5vw, 1rem);
+      outline: none;
     }
-    #wordInput{width:70%;background:#222;color:var(--text);border:1px solid #333}
-    #createBtn{color:#111;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));box-shadow:0 6px 18px rgba(236,72,153,.25);cursor:pointer}
-    #createBtn:hover{transform:translateY(-2px)}
-
-    /* Footer bits */
-    #link{color:var(--gold);word-break:break-all;font-size:clamp(.8rem,3vw,.95rem)}
-    #restartBtn,#newWordBtn{
-      display:none;margin-top:6px;color:#111;cursor:pointer;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      border:none;border-radius:10px;padding:.8rem 1rem;font-weight:700
+    #wordInput {
+      width: 70%;
+      background: #222;
+      color: var(--text);
+      border: 1px solid #333;
     }
-    #restartBtn:hover,#newWordBtn:hover{transform:translateY(-2px)}
+    #createBtn {
+      color: #111;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      box-shadow: 0 6px 18px rgba(236,72,153,0.25);
+      cursor: pointer;
+    }
+    #createBtn:hover { transform: translateY(-2px); }
 
-    .blink{animation:blink 1.5s infinite}
-    @keyframes blink{0%,90%,100%{opacity:1}95%{opacity:.2}}
+    /* Footer */
+    #lobby { color: var(--text-dim); line-height: 1.3; }
+    #link {
+      color: var(--text-dim);
+      word-break: break-all;
+      font-size: clamp(0.8rem, 3vw, 0.95rem);
+    }
+
+    #restartBtn, #newWordBtn {
+      display: none;
+      margin-top: 6px;
+      color: #111;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      border: none;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(168,85,247,0.25);
+    }
+    #restartBtn:hover, #newWordBtn:hover { transform: translateY(-2px); }
+
+    .blink { animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 90%, 100% { opacity: 1; } 95% { opacity: 0.2; } }
   </style>
 </head>
 
@@ -140,6 +262,7 @@
         <div>|</div>
         <div>👤 Gäst: <span id="scoreGuest" class="score">0</span></div>
       </div>
+      <div id="youAre"></div>
 
       <div id="hangZone">
         <canvas id="hangman"></canvas>
@@ -161,7 +284,7 @@
 
   <script>
   window.onload = () => {
-    /* ------------ Firebase ------------ */
+    /* ---------- Firebase ---------- */
     const firebaseConfig = {
       apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
       authDomain: "hangman-6a99e.firebaseapp.com",
@@ -175,7 +298,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    /* ------------ DOM ------------ */
+    /* ---------- DOM ---------- */
     const setup = document.getElementById("setup");
     const gameDiv = document.getElementById("game");
     const lettersDiv = document.getElementById("letters");
@@ -188,274 +311,314 @@
     const turnIndicator = document.getElementById("turnIndicator");
     const scoreHostEl = document.getElementById("scoreHost");
     const scoreGuestEl = document.getElementById("scoreGuest");
+    const youAreEl = document.getElementById("youAre");
     const canvas = document.getElementById("hangman");
     const ctx = canvas.getContext("2d");
 
-    /* ------------ State ------------ */
+    /* ---------- State ---------- */
     const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
     const urlParams = new URLSearchParams(location.search);
     const gameId = urlParams.get("game");
     let nickname = "Axwell";
     let isHost = false;
-    let prevWrong = 0;
-    let lastScores = {host:0, guest:0};
 
-    /* ------------ Helpers ------------ */
-    function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
+    // Hangman gradient animation state
+    let gradPhase = 0;      // 0..1
+    let currentWrong = 0;
+    let lastScores = { host: 0, guest: 0 };
 
-    // Fit canvas nicely inside available space
-    function resizeCanvas(){
+    /* ---------- Layout helpers ---------- */
+    function resizeCanvas() {
       const H = gameDiv.clientHeight || 520;
-      const avail = H * 0.36;                 // ~36% height for canvas
-      const w = Math.min(window.innerWidth*0.8, 300);
+      const avail = H * 0.36;                // ~36% of card height for canvas
+      const w = Math.min(window.innerWidth * 0.8, 300);
       const h = Math.min(avail, w * 1.25);
       canvas.width = w; canvas.height = h;
-      drawBase();
+      drawAll(currentWrong);
     }
     window.addEventListener("resize", resizeCanvas);
 
-    // Fade message helper
-    function showFadeMessage(text,duration=2200){
+    function showFadeMessage(text, duration = 2200) {
       msg.textContent = text;
       msg.classList.remove("fade");
-      setTimeout(()=>msg.classList.add("fade"), duration);
+      setTimeout(() => msg.classList.add("fade"), duration);
     }
 
-    // Score pop
-    function popScore(el){
+    function popScore(el) {
       el.style.transform = "scale(1.25)";
-      setTimeout(()=>el.style.transform="scale(1)", 220);
+      setTimeout(() => (el.style.transform = "scale(1)"), 220);
     }
 
-    // Create keyboard
-    function createLetterButtons(id){
+    /* ---------- Keyboard ---------- */
+    function createLetterButtons(id) {
       lettersDiv.innerHTML = "";
-      letters.forEach(ch=>{
+      letters.forEach(ch => {
         const btn = document.createElement("button");
         btn.textContent = ch;
-        btn.addEventListener("click", async ()=>{
-          const snap = await db.ref("games/"+id).get();
+        btn.addEventListener("click", async () => {
+          const snap = await db.ref("games/" + id).get();
           const data = snap.val() || {};
-          if(!data.word) return alert("Spelet är inte laddat än!");
-          data.guesses = Array.isArray(data.guesses)?data.guesses:[];
-          if(data.over) return;
+          if (!data.word) return alert("Spelet är inte laddat än!");
+          data.guesses = Array.isArray(data.guesses) ? data.guesses : [];
+          if (data.over) return;
 
-          const myRole = nickname==="Axwell" ? "host":"guest";
-          if(data.turn !== myRole) return alert("Inte din tur!");
+          const myRole = nickname === "Axwell" ? "host" : "guest";
+          if (data.turn !== myRole) return alert("Inte din tur!");
 
           btn.disabled = true;
 
           let correct = false;
-          if(!data.guesses.includes(ch)){
+          if (!data.guesses.includes(ch)) {
             data.guesses.push(ch);
-            if(!data.word.includes(ch)){ data.wrong++; }
-            else { correct = true; }
-            const solved = data.word.split("").every(l=>data.guesses.includes(l));
-            if(data.wrong>=6 || solved){
-              data.over = true;
-              if(data.wrong<6){ data.scores[data.turn] += 1; }
+            if (!data.word.includes(ch)) {
+              data.wrong++;
+            } else {
+              correct = true;
             }
-            await db.ref("games/"+id).update({
-              guesses:data.guesses, wrong:data.wrong, over:data.over, scores:data.scores
+            const solved = data.word.split("").every(l => data.guesses.includes(l));
+            if (data.wrong >= 6 || solved) {
+              data.over = true;
+              if (data.wrong < 6) {
+                data.scores[data.turn] += 1; // guesser scores
+              }
+            }
+            await db.ref("games/" + id).update({
+              guesses: data.guesses,
+              wrong: data.wrong,
+              over: data.over,
+              scores: data.scores
             });
           }
 
-          // typing feedback
-          btn.classList.add(correct ? "good":"bad");
-          setTimeout(()=>btn.classList.remove("good","bad"), 450);
+          // typing feedback glow
+          btn.classList.add(correct ? "good" : "bad");
+          setTimeout(() => btn.classList.remove("good", "bad"), 450);
         });
         lettersDiv.appendChild(btn);
       });
     }
 
-    // Word view
-    function showWord(word, guesses){
+    /* ---------- Word UI ---------- */
+    function showWord(word, guesses) {
       guesses = guesses || [];
-      wordDiv.textContent = word.split("").map(l=>guesses.includes(l)?l:"_").join(" ");
+      wordDiv.textContent = word.split("").map(l => (guesses.includes(l) ? l : "_")).join(" ");
     }
 
-    // Base stand (neutral warm color)
-    function drawBase(){
+    /* ---------- Gradient hangman drawing ---------- */
+    function strokeGradient(ctx) {
+      const w = canvas.width, h = canvas.height;
+      const g = ctx.createLinearGradient(
+        w * (0.2 + 0.6 * gradPhase), 0,
+        0, h * (0.8 + 0.6 * (1 - gradPhase))
+      );
+      g.addColorStop(0,   "#a855f7");
+      g.addColorStop(0.5, "#ec4899");
+      g.addColorStop(1,   "#a855f7");
+      return g;
+    }
+
+    function drawAll(wrong) {
       const cw = canvas.width, ch = canvas.height;
-      const sX = cw/200, sY = ch/250;
-      ctx.clearRect(0,0,cw,ch);
-      ctx.lineWidth = 2*Math.min(sX,sY);
-      ctx.strokeStyle = "#f5a623";
+      const sX = cw / 200, sY = ch / 250;
+      const lw = 2 * Math.min(sX, sY);
+      ctx.clearRect(0, 0, cw, ch);
+
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = strokeGradient(ctx);
+
+      // base + gallows
       ctx.beginPath();
       ctx.moveTo(10*sX,240*sY); ctx.lineTo(190*sX,240*sY);
       ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sX,20*sY);
       ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY);
       ctx.stroke();
+
+      if (wrong > 0) { ctx.beginPath(); ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2); ctx.stroke(); }        // head
+      if (wrong > 1) { ctx.beginPath(); ctx.moveTo(130*sX,90*sY); ctx.lineTo(130*sX,160*sY); ctx.stroke(); } // body
+      if (wrong > 2) { ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(100*sX,140*sY); ctx.stroke(); } // left arm
+      if (wrong > 3) { ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(160*sX,140*sY); ctx.stroke(); } // right arm
+      if (wrong > 4) { ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(110*sX,200*sY); ctx.stroke(); } // left leg
+      if (wrong > 5) { ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(150*sX,200*sY); ctx.stroke(); } // right leg
     }
 
-    // Progressive parts
-    function drawStep(step){
-      const cw = canvas.width, ch = canvas.height;
-      const sX = cw/200, sY = ch/250;
-      ctx.strokeStyle = "#f5a623";
-      ctx.lineWidth = 2*Math.min(sX,sY);
-
-      if(step===1){ ctx.beginPath(); ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2); ctx.stroke(); }
-      if(step===2){ ctx.beginPath(); ctx.moveTo(130*sX,90*sY); ctx.lineTo(130*sX,160*sY); ctx.stroke(); }
-      if(step===3){ ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(100*sX,140*sY); ctx.stroke(); }
-      if(step===4){ ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(160*sX,140*sY); ctx.stroke(); }
-      if(step===5){ ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(110*sX,200*sY); ctx.stroke(); }
-      if(step===6){ ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(150*sX,200*sY); ctx.stroke(); }
+    // Neon shimmer loop (cheap GPU cost; background is static)
+    function loop() {
+      gradPhase += 0.003;
+      if (gradPhase > 1) gradPhase -= 1;
+      drawAll(currentWrong);
+      requestAnimationFrame(loop);
     }
+    requestAnimationFrame(loop);
 
-    function animateToWrong(targetWrong){
-      // draw missing steps progressively
-      const start = prevWrong+1;
-      let step = start;
-      function tick(){
-        if(step<=targetWrong){ drawStep(step); step++; requestAnimationFrame(tick); }
-      }
-      if(targetWrong>=start) tick();
-      prevWrong = targetWrong;
-    }
-
-    /* ------------ Presence (guest auto-remove) ------------ */
+    /* ---------- Presence (auto-remove on disconnect) ---------- */
     const connectedRef = db.ref(".info/connected");
-    function setupPresence(id, role){
-      connectedRef.on("value", snap=>{
-        if(snap.val()){
+    function setupPresence(id, role) {
+      connectedRef.on("value", snap => {
+        if (snap.val()) {
           const pref = db.ref(`games/${id}/players/${role}`);
           pref.onDisconnect().remove();
         }
       });
     }
 
-    /* ------------ Create game (host) ------------ */
-    document.getElementById("createBtn").onclick = async ()=>{
-      const word = (document.getElementById("wordInput").value||"").trim().toUpperCase();
-      if(!word.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
-      const id = "hangman-"+Math.random().toString(36).substr(2,5);
-      await db.ref("games/"+id).set({
-        word, guesses:[], wrong:0, over:false,
-        players:{host:"Axwell"}, turn:"guest",
-        scores:{host:0, guest:0}
+    /* ---------- Create game (host) ---------- */
+    document.getElementById("createBtn").onclick = async () => {
+      const word = (document.getElementById("wordInput").value || "").trim().toUpperCase();
+      if (!word.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
+      const id = "hangman-" + Math.random().toString(36).substr(2, 5);
+      await db.ref("games/" + id).set({
+        word, guesses: [], wrong: 0, over: false,
+        players: { host: "Axwell" },
+        turn: "guest",
+        scores: { host: 0, guest: 0 }
       });
       localStorage.setItem("createdGameId", id);
       window.location.href = `${location.origin}${location.pathname}?game=${id}`;
     };
 
-    /* ------------ Join/host existing game ------------ */
-    if(gameId){
-      setup.style.display="none"; gameDiv.style.display="block";
+    /* ---------- Join/host existing game ---------- */
+    if (gameId) {
+      setup.style.display = "none";
+      gameDiv.style.display = "block";
       resizeCanvas();
 
-      db.ref("games/"+gameId).get().then(async snap=>{
-        if(!snap.exists()){ msg.textContent="❌ Spelet kunde inte hittas."; return; }
+      db.ref("games/" + gameId).get().then(async snap => {
+        if (!snap.exists()) {
+          msg.textContent = "❌ Spelet kunde inte hittas.";
+          return;
+        }
 
-        const isCreator = localStorage.getItem("createdGameId")===gameId;
+        const data = snap.val();
+        const isCreator = localStorage.getItem("createdGameId") === gameId;
         isHost = isCreator;
 
-        if(!isCreator){
-          nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
-          localStorage.setItem("hangmanNick", nickname);
+        if (!isCreator) {
+          // Always ask this session on mobile/desktop
+          if (!sessionStorage.getItem("askedNick")) {
+            const asked = prompt("Ange ditt namn:") || "Gäst";
+            sessionStorage.setItem("askedNick", "1");
+            localStorage.setItem("hangmanNick", asked);
+          }
+          nickname = localStorage.getItem("hangmanNick") || "Gäst";
           await db.ref(`games/${gameId}/players/guest`).set(nickname);
         } else {
           nickname = "Axwell";
         }
 
+        // Presence cleanup
         const role = isCreator ? "host" : "guest";
         setupPresence(gameId, role);
 
-        // initial UI
-        const data = snap.val();
-        lastScores = data.scores || {host:0,guest:0};
-        prevWrong = data.wrong || 0;
-        drawBase(); for(let s=1;s<=prevWrong;s++) drawStep(s);
+        // "You are" confirmation
+        youAreEl.textContent = `Du är: ${nickname}`;
 
-        showWord(data.word, data.guesses);
+        // Initial UI & link
+        lastScores = data.scores || { host: 0, guest: 0 };
+        currentWrong = data.wrong || 0;
+        drawAll(currentWrong);
+        showWord(data.word, data.guesses || []);
         createLetterButtons(gameId);
         linkEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${gameId}" target="_blank">${location.origin}${location.pathname}?game=${gameId}</a>`;
 
         listenToGame(gameId);
       });
     } else {
-      // better mobile UX when hosting
+      // Better mobile UX for host
       document.getElementById("wordInput").focus();
     }
 
-    /* ------------ Live listener ------------ */
-    function listenToGame(id){
-      db.ref("games/"+id).on("value", snap=>{
-        const data = snap.val(); if(!data) return;
+    /* ---------- Live listener ---------- */
+    function listenToGame(id) {
+      db.ref("games/" + id).on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
 
-        // word & letters
-        const guesses = Array.isArray(data.guesses)?data.guesses:[];
+        const guesses = Array.isArray(data.guesses) ? data.guesses : [];
         showWord(data.word, guesses);
 
-        // progressive draw
-        drawBase();
-        animateToWrong(Number(data.wrong)||0);
+        currentWrong = Number(data.wrong) || 0;
 
-        // scores + pop
-        if((data.scores?.host||0)!==lastScores.host){ popScore(scoreHostEl); }
-        if((data.scores?.guest||0)!==lastScores.guest){ popScore(scoreGuestEl); }
-        lastScores = {host:data.scores?.host||0, guest:data.scores?.guest||0};
+        // scores + pop animation
+        if ((data.scores?.host || 0) !== lastScores.host) popScore(scoreHostEl);
+        if ((data.scores?.guest || 0) !== lastScores.guest) popScore(scoreGuestEl);
+        lastScores = { host: data.scores?.host || 0, guest: data.scores?.guest || 0 };
         scoreHostEl.textContent = lastScores.host;
         scoreGuestEl.textContent = lastScores.guest;
 
-        // lobby & status
+        // lobby presence
         const players = data.players || {};
         const guestJoined = !!players.guest;
-        lobbyDiv.innerHTML = `🧑 ${players.host||"Okänd"} (värd)<br>👤 ${players.guest||"Ingen ansluten ännu"}<br><br>${guestJoined?"🎮 Båda spelare anslutna!":"⏳ Väntar på spelare ..."}`;
-        if(!guestJoined) showFadeMessage("🛑 Spelaren lämnade spelet!");
+        lobbyDiv.innerHTML =
+          `🧑 ${players.host || "Okänd"} (värd)<br>` +
+          `👤 ${players.guest || "Ingen ansluten ännu"}<br><br>` +
+          `${guestJoined ? "🎮 Båda spelare anslutna!" : "⏳ Väntar på spelare ..."}`;
+        if (!guestJoined) showFadeMessage("🛑 Spelaren lämnade spelet!");
 
-        // turn pulse
-        const myRole = nickname==="Axwell" ? "host" : "guest";
-        if(data.turn===myRole){
-          turnIndicator.textContent="🎯 Din tur att gissa!";
-          turnIndicator.classList.remove("blink");
+        // turn pulse + hint
+        const myRole = nickname === "Axwell" ? "host" : "guest";
+        if (data.turn === myRole) {
+          turnIndicator.textContent = "🎯 Din tur att gissa!";
           lettersDiv.classList.add("activeTurn");
         } else {
-          turnIndicator.innerHTML="⏳ Vänta på din tur <span class='blink'>👀</span>";
+          turnIndicator.innerHTML = "⏳ Vänta på din tur <span class='blink'>👀</span>";
           lettersDiv.classList.remove("activeTurn");
         }
 
-        // reset/disable guessed buttons
+        // Reset then disable guessed buttons
         const allBtns = document.querySelectorAll("#letters button");
-        allBtns.forEach(b=>b.disabled=false);
-        allBtns.forEach(b=>{ if(guesses.includes(b.textContent)) b.disabled = true; });
+        allBtns.forEach(b => (b.disabled = false));
+        allBtns.forEach(b => { if (guesses.includes(b.textContent)) b.disabled = true; });
 
-        // round transition buttons
-        if(data.over){
-          msg.textContent = data.wrong>=6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!";
-          restartBtn.style.display="inline-block";
-          newWordBtn.style.display="inline-block";
+        // Round controls
+        if (data.over) {
+          msg.textContent = data.wrong >= 6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!";
+          restartBtn.style.display = "inline-block";
+          newWordBtn.style.display = "inline-block";
+          // Ensure visibility on mobile Safari
+          restartBtn.style.display = "inline-block";
+          newWordBtn.style.display = "inline-block";
+          restartBtn.scrollIntoView({ block: "nearest" });
         } else {
-          restartBtn.style.display="none";
-          newWordBtn.style.display="none";
+          restartBtn.style.display = "none";
+          newWordBtn.style.display = "none";
+          msg.textContent = "";
         }
       });
     }
 
-    /* ------------ Actions ------------ */
-    restartBtn.onclick = async ()=>{
-      const snap = await db.ref("games/"+gameId).get();
-      const data = snap.val(); if(!data) return;
-      await db.ref("games/"+gameId).update({guesses:[],wrong:0,over:false});
-      prevWrong = 0; drawBase(); createLetterButtons(gameId);
+    /* ---------- Actions ---------- */
+    restartBtn.onclick = async () => {
+      const snap = await db.ref("games/" + gameId).get();
+      const data = snap.val();
+      if (!data) return;
+      await db.ref("games/" + gameId).update({ guesses: [], wrong: 0, over: false });
+      currentWrong = 0;
+      createLetterButtons(gameId);
       showFadeMessage("🔁 Ny runda!");
     };
 
-    newWordBtn.onclick = async ()=>{
-      const snap = await db.ref("games/"+gameId).get();
-      const data = snap.val(); if(!data?.over) return alert("Rundan är inte slut än!");
-      const newWord = (prompt("Ange nytt ord:")||"").toUpperCase();
-      if(!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
-      const nextTurn = data.turn==="host" ? "guest" : "host";
-      await db.ref("games/"+gameId).set({
-        word:newWord, guesses:[], wrong:0, over:false,
-        players:data.players, turn:nextTurn, scores:data.scores
+    newWordBtn.onclick = async () => {
+      const snap = await db.ref("games/" + gameId).get();
+      const data = snap.val();
+      if (!data?.over) return alert("Rundan är inte slut än!");
+      const newWord = (prompt("Ange nytt ord:") || "").toUpperCase();
+      if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
+      const nextTurn = data.turn === "host" ? "guest" : "host";
+      await db.ref("games/" + gameId).set({
+        word: newWord,
+        guesses: [],
+        wrong: 0,
+        over: false,
+        players: data.players,
+        turn: nextTurn,
+        scores: data.scores
       });
-      prevWrong = 0; drawBase(); createLetterButtons(gameId);
+      currentWrong = 0;
+      createLetterButtons(gameId);
       showFadeMessage("✍️ Nytt ord valt!");
     };
 
-    // initial sizing
+    // Initial size
     resizeCanvas();
   };
   </script>
