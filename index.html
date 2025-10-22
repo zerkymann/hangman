@@ -305,9 +305,15 @@
         const btn = document.createElement("button");
         btn.textContent = letter;
         btn.addEventListener("click", async () => {
-          const snap = await db.ref("games/" + id).get();
-          const data = snap.val();
-          if (!data || data.over) return;
+const snap = await db.ref("games/" + id).get();
+const data = snap.val() || {};
+if (!data.word) {
+  alert("Spelet är inte korrekt laddat än. Försök igen om en sekund!");
+  return;
+}
+data.guesses = Array.isArray(data.guesses) ? data.guesses : [];
+if (data.over) return;
+
 
           const myRole = nickname === "Axwell" ? "host" : "guest";
           if (data.turn !== myRole) return alert("Det är inte din tur!");
@@ -439,3 +445,4 @@
   </script>
 </body>
 </html>
+
