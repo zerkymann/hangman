@@ -261,21 +261,30 @@
     };
 
     // 🎮 Join existing game
-    if (gameId) {
-      setup.style.display = "none";
-      gameDiv.style.display = "block";
-      db.ref("games/" + gameId).get().then(async snap => {
-        if (!snap.exists()) return (msg.textContent = "❌ Spelet kunde inte hittas.");
-        const data = snap.val();
-        if (data.players?.host === "Axwell") isHost = true;
-        if (!isHost) {
-          nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
-          localStorage.setItem("hangmanNick", nickname);
-          await db.ref("games/" + gameId + "/players/guest").set(nickname);
-        }
-        startGame(gameId);
-      });
+// --- Join game ---
+if (gameId) {
+  setup.style.display = "none";
+  gameDiv.style.display = "block";
+  db.ref("games/" + gameId).get().then(async snap => {
+    if (!snap.exists()) return (msg.textContent = "❌ Spelet kunde inte hittas.");
+    const data = snap.val();
+
+    // Are we the creator (the first person who opened it right after creation)?
+    const isCreator = !data.players?.guest && localStorage.getItem("createdGameId") === gameId;
+    isHost = isCreator;
+
+    // Always prompt for a name unless we just created the game
+    if (!isCreator) {
+      nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
+      localStorage.setItem("hangmanNick", nickname);
+      await db.ref(`games/${gameId}/players/guest`).set(nickname);
+    } else {
+      nickname = "Axwell";
     }
+
+    startGame(gameId);
+  });
+}
 
     function startGame(id) {
       db.ref("games/" + id).get().then(snap => {
@@ -417,4 +426,5 @@
   </script>
 </body>
 </html>
+
 
