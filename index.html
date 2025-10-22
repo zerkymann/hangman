@@ -34,9 +34,9 @@
   </div>
 
   <script>
-    // 🔥 Initialize Firebase
+    // 🔥 Initialize Firebase (insert your config here)
     const firebaseConfig = {
-      apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
+  apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
   authDomain: "hangman-6a99e.firebaseapp.com",
   databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "hangman-6a99e",
@@ -62,12 +62,14 @@
     const gameId = urlParams.get("game");
     let isHost = false;
 
+    // 🧭 If URL has a game ID → join
     if (gameId) {
       setup.style.display = "none";
       gameDiv.style.display = "block";
       startGuessing(gameId);
     }
 
+    // ✨ Create game (and auto redirect host to their own room)
     document.getElementById("createBtn").onclick = async () => {
       const word = document.getElementById("wordInput").value.toUpperCase();
       if (!word.match(/^[A-Z]+$/)) return alert("Letters only!");
@@ -79,16 +81,10 @@
         wrong: 0,
         over: false
       });
-      setup.style.display = "none";
-      gameDiv.style.display = "block";
-      linkEl.innerHTML = `Share this link: <a href="?game=${id}">${location.origin}${location.pathname}?game=${id}</a>`;
-      showWord(word, []);
-      drawHangman(0);
-      listenToGame(id);
-      restartBtn.style.display = "block";
-      restartBtn.onclick = () => restartGame(id);
+      window.location.href = `${location.origin}${location.pathname}?game=${id}`;
     };
 
+    // 🎮 Join or continue game
     function startGuessing(id) {
       db.ref("games/" + id).get().then(snap => {
         if (!snap.exists()) {
@@ -102,8 +98,15 @@
         createLetterButtons(id);
         listenToGame(id);
       });
+
+      // Host check (if host is also in the room)
+      if (isHost || !urlParams.get("game")) {
+        restartBtn.style.display = "block";
+        restartBtn.onclick = () => restartGame(id);
+      }
     }
 
+    // 📝 Show current word with blanks
     function showWord(word, guesses) {
       guesses = Array.isArray(guesses) ? guesses : [];
       wordDiv.textContent = word
@@ -112,6 +115,7 @@
         .join(" ");
     }
 
+    // 🔠 Create A–Z letter buttons
     function createLetterButtons(id) {
       lettersDiv.innerHTML = "";
       for (let i = 65; i <= 90; i++) {
@@ -134,6 +138,7 @@
       }
     }
 
+    // 👂 Listen for real-time game updates
     function listenToGame(id) {
       db.ref("games/" + id).on("value", snap => {
         const data = snap.val();
@@ -147,8 +152,11 @@
           msg.textContent = "";
         }
       });
+
+      linkEl.innerHTML = `Share this link: <a href="?game=${id}">${location.origin}${location.pathname}?game=${id}</a>`;
     }
 
+    // 🔁 Restart game (host only)
     function restartGame(id) {
       const newWord = prompt("Enter a new word to restart:").toUpperCase();
       if (!newWord.match(/^[A-Z]+$/)) return alert("Letters only!");
@@ -164,12 +172,13 @@
       msg.textContent = "";
     }
 
+    // 🪜 Draw hangman graphics based on wrong guesses
     function drawHangman(wrong) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#000";
 
-      // Base structure
+      // Base gallows
       ctx.beginPath();
       ctx.moveTo(10, 240); ctx.lineTo(190, 240);
       ctx.moveTo(50, 240); ctx.lineTo(50, 20);
