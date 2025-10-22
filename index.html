@@ -374,9 +374,12 @@ if (data.over) return;
           turnIndicator.style.color = "#888";
         }
 
-        document.querySelectorAll("#letters button").forEach(b => {
-          if (guesses.includes(b.textContent)) b.disabled = true;
-        });
+// Always reset buttons, then disable only the guessed ones
+const allBtns = document.querySelectorAll("#letters button");
+allBtns.forEach(b => (b.disabled = false));
+allBtns.forEach(b => {
+  if (guesses.includes(b.textContent)) b.disabled = true;
+});
 
         if (data.over) {
           msg.textContent = data.wrong >= 6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!";
@@ -413,43 +416,49 @@ restartBtn.onclick = async () => {
   const snap = await db.ref("games/" + gameId).get();
   const data = snap.val();
   if (!data) return;
-await db.ref("games/" + gameId).set({
-  word: newWord,
-  guesses: [],
-  wrong: 0,
-  over: false,
-  players: data.players,
-  turn: nextTurn,
-  scores: data.scores
-});
-createLetterButtons(gameId);
+
+  await db.ref("games/" + gameId).update({
+    guesses: [],
+    wrong: 0,
+    over: false
+  });
+
+  // 🟢 Rebuild the alphabet buttons immediately
+  createLetterButtons(gameId);
 };
 
 
-    newWordBtn.onclick = async () => {
-      const snap = await db.ref("games/" + gameId).get();
-      const data = snap.val();
-      if (!data?.over) {
-        alert("Rundan är inte slut än!");
-        return;
-      }
-      const newWord = (prompt("Ange ett nytt ord:") || "").toUpperCase();
-      if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
+newWordBtn.onclick = async () => {
+  const snap = await db.ref("games/" + gameId).get();
+  const data = snap.val();
+  if (!data?.over) {
+    alert("Rundan är inte slut än!");
+    return;
+  }
 
-      const nextTurn = data.turn === "host" ? "guest" : "host";
-      await db.ref("games/" + gameId).set({
-        word: newWord,
-        guesses: [],
-        wrong: 0,
-        over: false,
-        players: data.players,
-        turn: nextTurn,
-        scores: data.scores
-      });
+  const newWord = (prompt("Ange ett nytt ord:") || "").toUpperCase();
+  if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
+
+  const nextTurn = data.turn === "host" ? "guest" : "host";
+  await db.ref("games/" + gameId).set({
+    word: newWord,
+    guesses: [],
+    wrong: 0,
+    over: false,
+    players: data.players,
+    turn: nextTurn,
+    scores: data.scores
+  });
+
+  // 🟢 Rebuild the alphabet buttons immediately
+  createLetterButtons(gameId);
+};
+
     };
   };
   </script>
 </body>
 </html>
+
 
 
