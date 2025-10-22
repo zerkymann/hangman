@@ -7,221 +7,191 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-
   <style>
-:root {
-  --bg1: #0d0d0f;
-  --bg2: #1a1a1f;
-  --panel: rgba(255,255,255,0.05);
-  --accent: #f5a623;
-  --accent2: #f57c00;
-  --text: #ffffff;
-  --text-dim: #bbbbbb;
-}
+    :root {
+      --bg1: #0d0d0f;
+      --bg2: #1a1a1f;
+      --panel: rgba(255,255,255,0.05);
+      --accent: #f5a623;
+      --accent2: #f57c00;
+      --text: #ffffff;
+      --text-dim: #bbbbbb;
+    }
 
-/* 🟡 Full layout */
-body {
-  font-family: "Poppins", sans-serif;
-  background: linear-gradient(-45deg, #0d0d0f, #1a1a1f, #161616, #1a1a1f);
-  background-size: 400% 400%;
-  animation: gradientShift 18s ease infinite;
-  color: var(--text);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden;
-  padding: 0 10px;
-}
+    /* Full-page, animated background; lock to viewport height on mobile */
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(-45deg, #0d0d0f, #1a1a1f, #161616, #1a1a1f);
+      background-size: 400% 400%;
+      animation: gradientShift 18s ease infinite;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100dvh;
+      margin: 0;
+      overflow: hidden;
+      padding: 0 10px;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+    #gameContainer {
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 500px;
+      height: 95%;
+      max-height: 95dvh;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
 
-#gameContainer {
-  background: var(--panel);
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  box-shadow: 0 0 25px rgba(0,0,0,0.6);
-  width: 100%;
-  max-width: 500px;
-  height: 95%;
-  max-height: 95dvh;
-  padding: 16px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-}
+    h1 {
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 1px;
+      margin: 0;
+      text-shadow: 0 0 10px rgba(245,166,35,0.6);
+      font-size: clamp(1.4rem, 5vw, 1.8rem);
+    }
 
-/* 🔠 Typography */
-h1 {
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 1px;
-  margin: 0;
-  text-shadow: 0 0 10px rgba(245,166,35,0.6);
-  font-size: clamp(1.4rem, 5vw, 1.8rem);
-}
+    #scoreboard {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 6px 10px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-around;
+      color: var(--accent);
+      font-size: clamp(0.8rem, 3.5vw, 1rem);
+    }
 
-/* 🧮 Scoreboard */
-#scoreboard {
-  background: rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 6px 10px;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-around;
-  color: var(--accent);
-  font-size: clamp(0.8rem, 3.5vw, 1rem);
-}
+    /* Auto-scaling canvas */
+    #hangman {
+      flex-grow: 1;
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 200 / 250;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      margin: 10px auto;
+      display: block;
+    }
 
-/* ✏️ Canvas (auto-scale) */
-#hangman {
-  flex-grow: 1;
-  width: 100%;
-  max-width: 280px;
-  aspect-ratio: 200 / 250;
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 8px;
-  margin: 10px auto;
-  display: block;
-}
+    #word {
+      font-size: clamp(1.2rem, 5vw, 1.8rem);
+      letter-spacing: 0.25em;
+      margin: 8px 0;
+      word-break: break-word;
+    }
 
-/* 🔡 Word and Keyboard */
-#word {
-  font-size: clamp(1.2rem, 5vw, 1.8rem);
-  letter-spacing: 0.25em;
-  margin: 8px 0;
-  word-break: break-word;
-}
+    #letters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin: 8px 0;
+      overflow-y: auto;
+      max-height: 25%;
+      padding-bottom: 5px;
+    }
+    #letters button {
+      flex: 0 0 calc(11% - 4px);
+      padding: 0.5rem 0.2rem;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #111;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #letters button:hover:not(:disabled) {
+      background: var(--accent2);
+      transform: translateY(-2px);
+    }
+    #letters button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
 
-#letters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-  margin: 8px 0;
-  overflow-y: auto;
-  max-height: 25%;
-  padding-bottom: 5px;
-}
+    #turnIndicator, #message, #lobby, #link {
+      font-size: clamp(0.85rem, 3.2vw, 1rem);
+    }
+    #turnIndicator { font-weight: 600; margin-bottom: 8px; }
 
-#letters button {
-  flex: 0 0 calc(11% - 4px);
-  padding: 0.5rem 0.2rem;
-  font-size: clamp(0.8rem, 3vw, 1rem);
-  background: var(--accent);
-  border: none;
-  border-radius: 6px;
-  color: #111;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+    #message {
+      color: var(--accent);
+      transition: opacity 0.4s ease;
+    }
+    .fade { opacity: 0; }
 
-#letters button:hover:not(:disabled) {
-  background: var(--accent2);
-  transform: translateY(-2px);
-}
+    #lobby { margin-top: 5px; color: var(--text-dim); line-height: 1.3; }
 
-#letters button:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
+    #link {
+      color: var(--accent);
+      word-break: break-all;
+      margin-top: 8px;
+      font-size: clamp(0.7rem, 3vw, 0.9rem);
+    }
 
-/* 💬 Text and Lobby */
-#turnIndicator, #message, #lobby, #link {
-  font-size: clamp(0.85rem, 3.2vw, 1rem);
-}
+    input, button {
+      font-family: "Poppins", sans-serif;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      font-size: clamp(0.9rem, 3.5vw, 1rem);
+      margin: 5px;
+      outline: none;
+    }
+    #wordInput {
+      width: 70%;
+      background: #222;
+      color: var(--text);
+      border: 1px solid #333;
+    }
+    #createBtn, #restartBtn, #newWordBtn {
+      background: var(--accent);
+      color: #111;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    #createBtn:hover, #restartBtn:hover, #newWordBtn:hover {
+      background: var(--accent2);
+      transform: translateY(-2px);
+    }
+    #restartBtn, #newWordBtn { display: none; margin-top: 5px; }
 
-#turnIndicator {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
+    .blink { animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 90%, 100% {opacity: 1;} 95% {opacity: 0.2;} }
 
-#message {
-  color: var(--accent);
-  transition: opacity 0.4s ease;
-}
-
-#lobby {
-  margin-top: 5px;
-  color: var(--text-dim);
-  line-height: 1.3;
-}
-
-#link {
-  color: var(--accent);
-  word-break: break-all;
-  margin-top: 8px;
-  font-size: clamp(0.7rem, 3vw, 0.9rem);
-}
-
-/* 📱 Inputs & Buttons */
-input, button {
-  font-family: "Poppins", sans-serif;
-  border: none;
-  border-radius: 8px;
-  padding: 0.8rem 1rem;
-  font-size: clamp(0.9rem, 3.5vw, 1rem);
-  margin: 5px;
-  outline: none;
-}
-
-#wordInput {
-  width: 70%;
-  background: #222;
-  color: var(--text);
-  border: 1px solid #333;
-}
-
-#createBtn, #restartBtn, #newWordBtn {
-  background: var(--accent);
-  color: #111;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-#createBtn:hover, #restartBtn:hover, #newWordBtn:hover {
-  background: var(--accent2);
-  transform: translateY(-2px);
-}
-
-#restartBtn, #newWordBtn {
-  display: none;
-  margin-top: 5px;
-}
-
-.blink {
-  animation: blink 1.5s infinite;
-}
-
-@keyframes blink {
-  0%, 90%, 100% { opacity: 1; }
-  95% { opacity: 0.2; }
-}
-    /* ✨ Pulse animation for active player's turn */
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(245,166,35, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(245,166,35, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245,166,35, 0); }
-}
-
-#letters.activeTurn button:not(:disabled) {
-  animation: pulse 1.5s infinite;
-}
-</style>
+    /* Pulse on your turn */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245,166,35,0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(245,166,35,0); }
+      100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); }
+    }
+    #letters.activeTurn button:not(:disabled) { animation: pulse 1.5s infinite; }
+  </style>
 </head>
+
 <body>
   <div id="gameContainer">
     <h1>HÄNGA GUBBE</h1>
+
     <div id="setup">
       <input id="wordInput" placeholder="Skriv ett ord..." />
       <button id="createBtn">Skapa spel</button>
@@ -231,6 +201,7 @@ input, button {
       <div id="scoreboard">
         🧑 Axwell: <span id="scoreHost">0</span> &nbsp;|&nbsp; 👤 Gäst: <span id="scoreGuest">0</span>
       </div>
+
       <canvas id="hangman"></canvas>
       <div id="word"></div>
       <div id="turnIndicator"></div>
@@ -238,6 +209,7 @@ input, button {
       <div id="message"></div>
       <div id="lobby"></div>
       <p id="link"></p>
+
       <button id="restartBtn">🔁 Spela igen</button>
       <button id="newWordBtn">✍️ Välj nytt ord</button>
     </div>
@@ -245,6 +217,7 @@ input, button {
 
   <script>
   window.onload = () => {
+    // 🔥 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
       authDomain: "hangman-6a99e.firebaseapp.com",
@@ -258,17 +231,7 @@ input, button {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 🧠 Presence system
-    const connectedRef = db.ref(".info/connected");
-    function setupPresence(gameId, role) {
-      connectedRef.on("value", (snap) => {
-        if (snap.val() === true) {
-          const playerRef = db.ref(`games/${gameId}/players/${role}`);
-          playerRef.onDisconnect().remove();
-        }
-      });
-    }
-
+    // DOM refs
     const setup = document.getElementById("setup");
     const gameDiv = document.getElementById("game");
     const wordDiv = document.getElementById("word");
@@ -280,32 +243,6 @@ input, button {
     const newWordBtn = document.getElementById("newWordBtn");
     const canvas = document.getElementById("hangman");
     const ctx = canvas.getContext("2d");
-// 🧩 Auto-scale the canvas dynamically for mobile + desktop
-function resizeCanvas() {
-  // height of the visible game area
-  const containerHeight = gameDiv.clientHeight;
-  // use about 30% of available height for hangman
-  const available = containerHeight * 0.3;
-
-  // width scales to 70% of screen width, but max 280px
-  const width = Math.min(window.innerWidth * 0.7, 280);
-
-  // height proportional to width, but never taller than available space
-  const height = Math.min(available, width * 1.25);
-
-  // apply to canvas
-  canvas.width = width;
-  canvas.height = height;
-
-  // redraw base hangman so it’s visible
-  drawHangman(0);
-}
-
-// update on window resize or rotation
-window.addEventListener("resize", resizeCanvas);
-
-// run once at start
-resizeCanvas();
     const turnIndicator = document.getElementById("turnIndicator");
     const scoreHostEl = document.getElementById("scoreHost");
     const scoreGuestEl = document.getElementById("scoreGuest");
@@ -317,48 +254,71 @@ resizeCanvas();
     let nickname = "Axwell";
     let isHost = false;
 
-    // 🧭 Host creates game
-    const createBtn = document.getElementById("createBtn");
-    createBtn.addEventListener("click", async () => {
-      try {
-        const word = document.getElementById("wordInput").value.trim().toUpperCase();
-        if (!word.match(/^[A-ZÅÄÖ]+$/)) {
-          alert("Endast bokstäver (A–Ö) tillåtna!");
-          return;
-        }
-        const id = "hangman-" + Math.random().toString(36).substr(2, 5);
-        await db.ref("games/" + id).set({
-          word,
-          guesses: [],
-          wrong: 0,
-          over: false,
-          players: { host: "Axwell" },
-          turn: "guest",
-          scores: { host: 0, guest: 0 }
-        });
-        localStorage.setItem("createdGameId", id);
-        window.location.href = `${location.origin}${location.pathname}?game=${id}`;
-      } catch (err) {
-        alert("Kunde inte skapa spelet. Kontrollera Firebase-konfigurationen.");
-      }
-    });
+    // 🧩 Auto-scale canvas (redraw base each time)
+    function resizeCanvas() {
+      const containerHeight = gameDiv.clientHeight || 500;
+      const available = containerHeight * 0.3;
+      const width = Math.min(window.innerWidth * 0.7, 280);
+      const height = Math.min(available, width * 1.25);
+      canvas.width = width;
+      canvas.height = height;
+      drawHangman(0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
 
-    // 🎮 Join existing game
+    // 🧠 Presence (remove player on disconnect)
+    const connectedRef = db.ref(".info/connected");
+    function setupPresence(gameId, role) {
+      connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+          const playerRef = db.ref(`games/${gameId}/players/${role}`);
+          playerRef.onDisconnect().remove();
+        }
+      });
+    }
+
+    // 🧭 Create game (host)
+    document.getElementById("createBtn").onclick = async () => {
+      const word = (document.getElementById("wordInput").value || "").trim().toUpperCase();
+      if (!word.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
+      const id = "hangman-" + Math.random().toString(36).substr(2,5);
+      await db.ref("games/" + id).set({
+        word,
+        guesses: [],
+        wrong: 0,
+        over: false,
+        players: { host: "Axwell" },
+        turn: "guest",
+        scores: { host: 0, guest: 0 }
+      });
+      localStorage.setItem("createdGameId", id);
+      window.location.href = `${location.origin}${location.pathname}?game=${id}`;
+    };
+
+    // 🎮 Join/host existing game
     if (gameId) {
       setup.style.display = "none";
       gameDiv.style.display = "block";
+
       db.ref("games/" + gameId).get().then(async snap => {
-        if (!snap.exists()) return (msg.textContent = "❌ Spelet kunde inte hittas.");
-        const data = snap.val();
-        const isCreator = data.players?.guest && localStorage.getItem("createdGameId") === gameId;
+        if (!snap.exists()) {
+          msg.textContent = "❌ Spelet kunde inte hittas.";
+          return;
+        }
+        const isCreator = localStorage.getItem("createdGameId") === gameId;
         isHost = isCreator;
+
         if (!isCreator) {
           nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
           localStorage.setItem("hangmanNick", nickname);
           await db.ref(`games/${gameId}/players/guest`).set(nickname);
-        } else nickname = "Axwell";
+        } else {
+          nickname = "Axwell";
+        }
+
         const role = isCreator ? "host" : "guest";
-        if (role === "guest") setupPresence(gameId, role);
+        setupPresence(gameId, role);
         startGame(gameId);
       });
     }
@@ -369,54 +329,19 @@ resizeCanvas();
       setTimeout(() => msg.classList.add("fade"), duration);
     }
 
+    // 👟 Start game listeners and initial UI
     function startGame(id) {
-      db.ref("games/" + id).on("value", snap => {
-        const data = snap.val();
-        if (!data) return;
-        const guesses = Array.isArray(data.guesses) ? data.guesses : [];
-        showWord(data.word, guesses);
-        drawHangman(data.wrong || 0);
-        scoreHostEl.textContent = data.scores?.host || 0;
-        scoreGuestEl.textContent = data.scores?.guest || 0;
-
-        const players = data.players || {};
-        const guestJoined = !!players.guest;
-        lobbyDiv.innerHTML = `
-          🧑 ${players.host || "Okänd"} (värd)<br>
-          👤 ${players.guest || "Ingen ansluten ännu"}<br><br>
-          ${guestJoined ? "🎮 Båda spelare anslutna!" : "⏳ Väntar på spelare ..."}
-        `;
-        if (!guestJoined) showFadeMessage("🛑 Spelaren lämnade spelet!");
-
-        const myRole = nickname === "Axwell" ? "host" : "guest";
-if (data.turn === myRole) {
-  turnIndicator.textContent = "🎯 Din tur att gissa!";
-  turnIndicator.style.color = "#f5a623";
-  turnIndicator.classList.remove("blink");
-
-  // 🟡 Add gentle pulse to the keyboard
-  lettersDiv.classList.add("activeTurn");
-} else {
-  turnIndicator.innerHTML = "⏳ Vänta på din tur <span class='blink'>👀</span>";
-  turnIndicator.style.color = "#888";
-
-  // 🔵 Stop pulse when it's not your turn
-  lettersDiv.classList.remove("activeTurn");
-}
-        const allBtns = document.querySelectorAll("#letters button");
-        allBtns.forEach(b => (b.disabled = false));
-        allBtns.forEach(b => {
-          if (guesses.includes(b.textContent)) b.disabled = true;
-        });
-
-        if (data.over) {
-          msg.textContent = data.wrong >= 6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!";
-          restartBtn.style.display = "inline-block";
-          newWordBtn.style.display = "inline-block";
-        } else {
-          restartBtn.style.display = "none";
-          newWordBtn.style.display = "none";
+      db.ref("games/" + id).get().then(snap => {
+        if (!snap.exists()) {
+          msg.textContent = "❌ Spelet kunde inte hittas.";
+          return;
         }
+        const data = snap.val();
+        showWord(data.word, data.guesses);
+        createLetterButtons(id);
+        drawHangman(data.wrong || 0);
+        linkEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${id}" target="_blank">${location.origin}${location.pathname}?game=${id}</a>`;
+        listenToGame(id);
       });
     }
 
@@ -430,7 +355,7 @@ if (data.turn === myRole) {
       letters.forEach(letter => {
         const btn = document.createElement("button");
         btn.textContent = letter;
-        btn.addEventListener("click", async () => {
+        btn.onclick = async () => {
           const snap = await db.ref("games/" + id).get();
           const data = snap.val() || {};
           if (!data.word) return alert("Spelet är inte laddat än!");
@@ -456,8 +381,58 @@ if (data.turn === myRole) {
               scores: data.scores
             });
           }
-        });
+        };
         lettersDiv.appendChild(btn);
+      });
+    }
+
+    function listenToGame(id) {
+      db.ref("games/" + id).on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+
+        const guesses = Array.isArray(data.guesses) ? data.guesses : [];
+        showWord(data.word, guesses);
+        drawHangman(data.wrong || 0);
+        scoreHostEl.textContent = data.scores?.host || 0;
+        scoreGuestEl.textContent = data.scores?.guest || 0;
+
+        const players = data.players || {};
+        const guestJoined = !!players.guest;
+        lobbyDiv.innerHTML = `
+          🧑 ${players.host || "Okänd"} (värd)<br>
+          👤 ${players.guest || "Ingen ansluten ännu"}<br><br>
+          ${guestJoined ? "🎮 Båda spelare anslutna!" : "⏳ Väntar på spelare ..."}
+        `;
+        if (!guestJoined) showFadeMessage("🛑 Spelaren lämnade spelet!");
+
+        const myRole = nickname === "Axwell" ? "host" : "guest";
+        if (data.turn === myRole) {
+          turnIndicator.textContent = "🎯 Din tur att gissa!";
+          turnIndicator.style.color = "#f5a623";
+          turnIndicator.classList.remove("blink");
+          lettersDiv.classList.add("activeTurn");
+        } else {
+          turnIndicator.innerHTML = "⏳ Vänta på din tur <span class='blink'>👀</span>";
+          turnIndicator.style.color = "#888";
+          lettersDiv.classList.remove("activeTurn");
+        }
+
+        // Reset then disable guessed letters
+        const allBtns = document.querySelectorAll("#letters button");
+        allBtns.forEach(b => (b.disabled = false));
+        allBtns.forEach(b => {
+          if (guesses.includes(b.textContent)) b.disabled = true;
+        });
+
+        if (data.over) {
+          msg.textContent = data.wrong >= 6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!";
+          restartBtn.style.display = "inline-block";
+          newWordBtn.style.display = "inline-block";
+        } else {
+          restartBtn.style.display = "none";
+          newWordBtn.style.display = "none";
+        }
       });
     }
 
@@ -465,21 +440,27 @@ if (data.turn === myRole) {
       const cw = canvas.clientWidth, ch = canvas.clientHeight;
       canvas.width = cw; canvas.height = ch;
       const sX = cw / 200, sY = ch / 250;
+
       ctx.clearRect(0, 0, cw, ch);
       ctx.lineWidth = 2 * Math.min(sX, sY);
       ctx.strokeStyle = "#f5a623";
+
+      // base + pole
       ctx.beginPath();
       ctx.moveTo(10*sX,240*sY); ctx.lineTo(190*sX,240*sY);
-      ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sY,20*sY);
-      ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY); ctx.stroke();
-      if(wrong>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke();}
-      if(wrong>1){ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke();}
-      if(wrong>2){ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke();}
-      if(wrong>3){ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke();}
-      if(wrong>4){ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke();}
-      if(wrong>5){ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
+      ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sX,20*sY);
+      ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY);
+      ctx.stroke();
+
+      if(wrong>0){ ctx.beginPath(); ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2); ctx.stroke(); }         // head
+      if(wrong>1){ ctx.beginPath(); ctx.moveTo(130*sX,90*sY); ctx.lineTo(130*sX,160*sY); ctx.stroke(); } // body
+      if(wrong>2){ ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(100*sX,140*sY); ctx.stroke(); } // left arm
+      if(wrong>3){ ctx.beginPath(); ctx.moveTo(130*sX,110*sY); ctx.lineTo(160*sX,140*sY); ctx.stroke(); } // right arm
+      if(wrong>4){ ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(110*sX,200*sY); ctx.stroke(); } // left leg
+      if(wrong>5){ ctx.beginPath(); ctx.moveTo(130*sX,160*sY); ctx.lineTo(150*sX,200*sY); ctx.stroke(); } // right leg
     }
 
+    // 🔁 Restart (same word)
     restartBtn.onclick = async () => {
       const snap = await db.ref("games/" + gameId).get();
       const data = snap.val();
@@ -488,6 +469,7 @@ if (data.turn === myRole) {
       createLetterButtons(gameId);
     };
 
+    // ✍️ New word (switch turn)
     newWordBtn.onclick = async () => {
       const snap = await db.ref("games/" + gameId).get();
       const data = snap.val();
