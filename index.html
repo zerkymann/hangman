@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hänga gubbe — Multiplayer</title>
+  <title>HÄNGA GUBBE</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
@@ -182,7 +182,7 @@
 </head>
 <body>
   <div id="gameContainer">
-    <h1>HÄNGA GUBBE — MULTIPLAYER</h1>
+    <h1>HÄNGA GUBBE</h1>
 
     <div id="setup">
       <input id="wordInput" placeholder="Skriv ett ord..." />
@@ -207,7 +207,7 @@
 
   <script>
   window.onload = () => {
-    // 🔥 Firebase config
+    // 🔥 Firebase config (replace with your real info)
     const firebaseConfig = {
   apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
   authDomain: "hangman-6a99e.firebaseapp.com",
@@ -308,24 +308,31 @@
           const snap = await db.ref("games/" + id).get();
           const data = snap.val();
           if (!data || data.over) return;
+
           const myRole = nickname === "Axwell" ? "host" : "guest";
           if (data.turn !== myRole) return alert("Det är inte din tur!");
-          btn.disabled = true;
-          if (!data.guesses.includes(letter)) {
-            data.guesses.push(letter);
-            if (!data.word.includes(letter)) data.wrong++;
-            if (data.wrong >= 6 || data.word.split("").every(l => data.guesses.includes(l))) {
-              data.over = true;
-              if (data.wrong < 6) {
-                data.scores[data.turn] += 1;
+
+          try {
+            btn.disabled = true;
+            if (!data.guesses.includes(letter)) {
+              data.guesses.push(letter);
+              if (!data.word.includes(letter)) data.wrong++;
+              const allFound = data.word.split("").every(l => data.guesses.includes(l));
+              if (data.wrong >= 6 || allFound) {
+                data.over = true;
+                if (data.wrong < 6) data.scores[data.turn] += 1;
               }
+              await db.ref("games/" + id).update({
+                guesses: data.guesses,
+                wrong: data.wrong,
+                over: data.over,
+                scores: data.scores
+              });
             }
-            await db.ref("games/" + id).update({
-              guesses: data.guesses,
-              wrong: data.wrong,
-              over: data.over,
-              scores: data.scores
-            });
+          } catch (e) {
+            console.error("Firebase update failed:", e);
+            alert("Kunde inte uppdatera spelet: " + e.message);
+            btn.disabled = false;
           }
         });
         lettersDiv.appendChild(btn);
@@ -337,8 +344,9 @@
         const data = snap.val();
         if (!data) return;
 
-        showWord(data.word, data.guesses);
-        drawHangman(data.wrong);
+        const guesses = Array.isArray(data.guesses) ? data.guesses : [];
+        showWord(data.word, guesses);
+        drawHangman(Number(data.wrong) || 0);
         scoreHostEl.textContent = data.scores?.host || 0;
         scoreGuestEl.textContent = data.scores?.guest || 0;
 
@@ -361,7 +369,7 @@
         }
 
         document.querySelectorAll("#letters button").forEach(b => {
-          if (data.guesses.includes(b.textContent)) b.disabled = true;
+          if (guesses.includes(b.textContent)) b.disabled = true;
         });
 
         if (data.over) {
@@ -407,10 +415,15 @@
     };
 
     newWordBtn.onclick = async () => {
-      const newWord = prompt("Ange ett nytt ord:").toUpperCase();
-      if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
       const snap = await db.ref("games/" + gameId).get();
       const data = snap.val();
+      if (!data?.over) {
+        alert("Rundan är inte slut än!");
+        return;
+      }
+      const newWord = (prompt("Ange ett nytt ord:") || "").toUpperCase();
+      if (!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A-Ö) tillåtna!");
+
       const nextTurn = data.turn === "host" ? "guest" : "host";
       await db.ref("games/" + gameId).set({
         word: newWord,
