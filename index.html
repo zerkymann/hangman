@@ -207,7 +207,7 @@
 
   <script>
   window.onload = () => {
-    // 🔥 Firebase config (replace with your own)
+    // 🔥 Firebase config
     const firebaseConfig = {
   apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
   authDomain: "hangman-6a99e.firebaseapp.com",
@@ -257,34 +257,30 @@
         turn: "guest",
         scores: { host: 0, guest: 0 }
       });
+      localStorage.setItem("createdGameId", id);
       window.location.href = `${location.origin}${location.pathname}?game=${id}`;
     };
 
     // 🎮 Join existing game
-// --- Join game ---
-if (gameId) {
-  setup.style.display = "none";
-  gameDiv.style.display = "block";
-  db.ref("games/" + gameId).get().then(async snap => {
-    if (!snap.exists()) return (msg.textContent = "❌ Spelet kunde inte hittas.");
-    const data = snap.val();
+    if (gameId) {
+      setup.style.display = "none";
+      gameDiv.style.display = "block";
+      db.ref("games/" + gameId).get().then(async snap => {
+        if (!snap.exists()) return (msg.textContent = "❌ Spelet kunde inte hittas.");
+        const data = snap.val();
+        const isCreator = !data.players?.guest && localStorage.getItem("createdGameId") === gameId;
+        isHost = isCreator;
 
-    // Are we the creator (the first person who opened it right after creation)?
-    const isCreator = !data.players?.guest && localStorage.getItem("createdGameId") === gameId;
-    isHost = isCreator;
-
-    // Always prompt for a name unless we just created the game
-    if (!isCreator) {
-      nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
-      localStorage.setItem("hangmanNick", nickname);
-      await db.ref(`games/${gameId}/players/guest`).set(nickname);
-    } else {
-      nickname = "Axwell";
+        if (!isCreator) {
+          nickname = localStorage.getItem("hangmanNick") || prompt("Ange ditt namn:") || "Gäst";
+          localStorage.setItem("hangmanNick", nickname);
+          await db.ref(`games/${gameId}/players/guest`).set(nickname);
+        } else {
+          nickname = "Axwell";
+        }
+        startGame(gameId);
+      });
     }
-
-    startGame(gameId);
-  });
-}
 
     function startGame(id) {
       db.ref("games/" + id).get().then(snap => {
@@ -320,12 +316,16 @@ if (gameId) {
             if (!data.word.includes(letter)) data.wrong++;
             if (data.wrong >= 6 || data.word.split("").every(l => data.guesses.includes(l))) {
               data.over = true;
-              // update score
               if (data.wrong < 6) {
                 data.scores[data.turn] += 1;
               }
             }
-            await db.ref("games/" + id).set(data);
+            await db.ref("games/" + id).update({
+              guesses: data.guesses,
+              wrong: data.wrong,
+              over: data.over,
+              scores: data.scores
+            });
           }
         });
         lettersDiv.appendChild(btn);
@@ -339,7 +339,6 @@ if (gameId) {
 
         showWord(data.word, data.guesses);
         drawHangman(data.wrong);
-
         scoreHostEl.textContent = data.scores?.host || 0;
         scoreGuestEl.textContent = data.scores?.guest || 0;
 
@@ -400,10 +399,11 @@ if (gameId) {
       const snap = await db.ref("games/" + gameId).get();
       const data = snap.val();
       if (!data) return;
-      data.guesses = [];
-      data.wrong = 0;
-      data.over = false;
-      await db.ref("games/" + gameId).set(data);
+      await db.ref("games/" + gameId).update({
+        guesses: [],
+        wrong: 0,
+        over: false
+      });
     };
 
     newWordBtn.onclick = async () => {
@@ -426,5 +426,3 @@ if (gameId) {
   </script>
 </body>
 </html>
-
-
