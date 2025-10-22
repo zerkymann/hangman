@@ -409,16 +409,22 @@ if (data.over) return;
       if(wrong>5){ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
     }
 
-    restartBtn.onclick = async () => {
-      const snap = await db.ref("games/" + gameId).get();
-      const data = snap.val();
-      if (!data) return;
-      await db.ref("games/" + gameId).update({
-        guesses: [],
-        wrong: 0,
-        over: false
-      });
-    };
+restartBtn.onclick = async () => {
+  const snap = await db.ref("games/" + gameId).get();
+  const data = snap.val();
+  if (!data) return;
+await db.ref("games/" + gameId).set({
+  word: newWord,
+  guesses: [],
+  wrong: 0,
+  over: false,
+  players: data.players,
+  turn: nextTurn,
+  scores: data.scores
+});
+createLetterButtons(gameId);
+};
+
 
     newWordBtn.onclick = async () => {
       const snap = await db.ref("games/" + gameId).get();
@@ -445,4 +451,5 @@ if (data.over) return;
   </script>
 </body>
 </html>
+
 
