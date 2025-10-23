@@ -4,620 +4,310 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>HÄNGA GUBBE</title>
+
+  <!-- Fonts & Firebase -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
   <style>
-    :root{
-      --bg1:#0d0d0f;
-      --bg2:#1a1a1f;
-      --panel:rgba(255,255,255,0.06);
-      --text:#fff;
-      --text-dim:#bdbdbd;
-      --grad-a:#ec4899; /* pink */
-      --grad-b:#a855f7; /* purple */
-    }
-    body{
-      margin:0; font-family:"Poppins",sans-serif; color:var(--text);
-      background: radial-gradient(1000px 700px at 20% 10%, #17171b, #0f0f12 40%, #0b0b0d 70%),
-                  linear-gradient(160deg, var(--bg1), var(--bg2));
-      display:flex; align-items:center; justify-content:center; height:100dvh;
-      overflow:hidden; padding:10px;
-    }
-    /* Particle backdrop */
-    #bgParticles{position:fixed; inset:0; z-index:0; pointer-events:none;}
-
-    /* Card */
-    #card{
-      position:relative; z-index:1; width:min(920px, 98vw); height:min(94dvh, 860px);
-      background:var(--panel); border-radius:18px; backdrop-filter:blur(12px);
-      box-shadow:0 0 25px rgba(0,0,0,.6); display:flex; flex-direction:column; gap:10px;
-      padding:12px; overflow:hidden;
-    }
-    h1{
-      margin:0; text-align:center; font-weight:600; font-size:clamp(1.5rem,5vw,2rem);
-      color:transparent; background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text; background-clip:text; text-shadow:0 0 18px rgba(236,72,153,.18);
+    :root {
+      --grad-a: #ec4899;
+      --grad-b: #a855f7;
+      --bg1: #0e0e11;
+      --bg2: #1a1a1f;
+      --panel: rgba(255,255,255,0.08);
+      --text: #fff;
+      --text-dim: #bdbdbd;
     }
 
-    /* Chat (compact at top) */
-    #chat{ display:flex; flex-direction:column; gap:6px; background:rgba(255,255,255,.05);
-      border:1px solid #2b2b30; border-radius:10px; padding:8px; margin:0 auto; width:min(780px, 95%);
-      max-height:140px; overflow:hidden; }
-    #chatHeader{ display:flex; justify-content:space-between; align-items:center; font-weight:600; color:transparent;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; background-clip:text; font-size:0.95rem; }
-    #chatList{ flex:1; overflow:auto; display:flex; flex-direction:column; gap:6px; scroll-behavior:smooth; }
-    .chatMsg{ background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px 8px; font-size:.95rem; line-height:1.25; opacity:1; transition:opacity .6s ease; }
-    .chatMeta{ font-size:.75rem; color:var(--text-dim); margin-top:2px }
-    .chatMsg.fadeout{ opacity:0; }
-    #chatInputRow{ display:flex; gap:6px }
-    #chatText{ flex:1; border-radius:10px; border:1px solid #333; background:#222; color:#fff; padding:.6rem .9rem; }
-    #chatSend{ min-width:90px; color:#111; border:none; border-radius:10px; padding:.6rem .9rem; font-weight:700; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 18px rgba(236,72,153,.25); cursor:pointer; }
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+      overflow: hidden;
+    }
 
-    /* Timer row */
-    #timerRow{ margin:0 auto; width:min(780px, 95%); display:flex; flex-direction:column; gap:8px; align-items:center; }
-    #timerControls{ display:flex; gap:8px; align-items:center; justify-content:center; }
-    .btn{ color:#111; cursor:pointer; border:none; border-radius:10px; padding:.6rem .9rem; font-weight:700; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 18px rgba(168,85,247,.25); }
-    .btn:hover{ transform:translateY(-2px); }
-    #timerConfig{ display:none; gap:6px; align-items:center; }
-    #timerInput{ width:80px; padding:.5rem .6rem; border-radius:10px; border:1px solid #333; background:#222; color:#fff; font-weight:700; text-align:center; }
+    h1 {
+      font-weight: 700;
+      text-align: center;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0 0 12px;
+    }
 
-    /* Timer bar (filled, drains; glow pulses at 1s) */
-    #timerBar{ width:100%; height:12px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.08); box-shadow:inset 0 0 10px rgba(0,0,0,.3); display:none; position:relative; }
-    #timerFill{ height:100%; width:0%; background:linear-gradient(90deg, var(--grad-a), var(--grad-b)); transition:width .2s linear, filter .2s linear; }
-    #timerBar::after{ content:""; position:absolute; inset:-8px -8px; background:radial-gradient(closest-side, rgba(236,72,153,.35), transparent 65%); filter:blur(8px); opacity:0; transition:opacity .2s linear; animation:pulse 1s infinite; pointer-events:none; }
-    @keyframes pulse{ 0%{opacity:.25} 50%{opacity:1} 100%{opacity:.25} }
+    .card {
+      background: var(--panel);
+      border-radius: 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+      width: min(720px, 96vw);
+      padding: 20px;
+      text-align: center;
+    }
 
-    /* Scoreboard + totals */
-    #scoreWrap{display:flex; flex-direction:column; align-items:center; gap:6px}
-    #scoreboard{ display:flex; justify-content:center; align-items:center; gap:14px; background:rgba(255,255,255,.08); padding:6px 10px; border-radius:10px; font-weight:600; color:transparent; background-image:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; background-clip:text; width:min(420px, 95%); text-align:center; }
-    .score{display:inline-block; transition:transform .25s ease}
-    #totals{ display:flex; gap:18px; color:var(--text-dim); font-size:.9rem }
-    #youAre{ color:var(--text-dim); font-size:.95rem }
+    input, button, select {
+      font-family: inherit;
+      border-radius: 10px;
+      border: 1px solid #333;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+    }
 
-    /* Game area centered */
-    #gameArea{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; min-height:0; overflow:hidden; }
-    #hangman{ width:min(90%, 360px); aspect-ratio:200/250; background:#111; border:1px solid #333; border-radius:10px; box-shadow:inset 0 0 15px rgba(0,0,0,.35); }
-    #word{ letter-spacing:.25em; font-size:clamp(1.2rem, 5vw, 1.8rem); text-align:center; }
-    #letters{ display:grid; grid-template-columns:repeat(auto-fit,minmax(34px,1fr)); gap:6px; width:min(780px,95%); user-select:none; }
-    #letters button{ width:100%; min-width:34px; padding:.5rem .2rem; font-size:clamp(.8rem,3.2vw,1rem); font-weight:700; color:#111; border:none; border-radius:8px; cursor:pointer; position:relative; overflow:hidden; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); background-size:200% 200%; animation:shineMove 5s ease infinite; box-shadow:0 6px 18px rgba(168,85,247,.25); transition:transform .15s ease, filter .15s ease, opacity .15s ease; }
-    @keyframes shineMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-    #letters button:hover:not(:disabled){ transform:translateY(-2px) }
-    #letters button:disabled{ opacity:.35; cursor:default; filter:saturate(.7) }
-    #letters button.good{ outline:2px solid #22c55e; box-shadow:0 0 0 4px rgba(34,197,94,.25) }
-    #letters button.bad{ outline:2px solid #ef4444; box-shadow:0 0 0 4px rgba(239,68,68,.25) }
+    input {
+      width: 100%;
+      background: #222;
+      color: #fff;
+    }
 
-    #message{ min-height:1.4em; opacity:.95; transition:opacity .35s ease; }
-    .fade{ opacity:0; }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      border: none;
+      color: #111;
+      box-shadow: 0 6px 18px rgba(168,85,247,.25);
+      transition: transform 0.15s ease;
+    }
 
-    /* Share link + lobby status */
-    #share{ color:var(--text-dim); font-size:.9rem; text-align:center; word-break:break-all; }
-    #lobby{ color:var(--text-dim); font-size:.95rem; text-align:center; }
+    button:hover {
+      transform: translateY(-2px);
+    }
 
-    /* Round buttons */
-    #actions{ display:flex; gap:8px; justify-content:center; }
-    .actionBtn{ display:none; margin-top:6px; color:#111; cursor:pointer; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); border:none; border-radius:10px; padding:.8rem 1rem; font-weight:700; box-shadow:0 6px 18px rgba(168,85,247,.25); }
-    .actionBtn:hover{ transform:translateY(-2px) }
+    .hidden { display: none; }
+    #game { display: none; }
+
+    #letters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    #letters button {
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      border: none;
+      color: #111;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: .5rem;
+    }
+
+    #chat {
+      margin-top: 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      padding: 8px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-size: .9rem;
+      text-align: left;
+    }
+
+    #turnIndicator {
+      margin-top: 8px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    #share {
+      margin-top: 6px;
+      font-size: .9rem;
+      color: var(--text-dim);
+      word-break: break-all;
+    }
+
+    #scoreboard {
+      margin-top: 8px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    canvas { background: #111; border-radius: 10px; margin-top: 10px; width: 100%; aspect-ratio: 4/3; }
   </style>
 </head>
+
 <body>
-  <canvas id="bgParticles"></canvas>
-  <div id="card">
+  <!-- Start screen -->
+  <div id="start" class="card">
     <h1>HÄNGA GUBBE</h1>
-
-    <!-- Chat (compact, auto-fade old messages) -->
-    <div id="chat">
-      <div id="chatHeader">
-        <div>💬 Lobby</div>
-        <div id="typingIndicator" style="color:var(--text-dim); font-size:.9rem;"></div>
-      </div>
-      <div id="chatList"></div>
-      <div id="chatInputRow">
-        <input id="chatText" placeholder="Skriv ett meddelande..." />
-        <button id="chatSend" class="btn">Skicka</button>
-      </div>
+    <div>
+      <label for="lang">Språk / Language:</label>
+      <select id="lang">
+        <option value="sv">Svenska</option>
+        <option value="en">English</option>
+      </select>
     </div>
-
-    <!-- Timer + controls -->
-    <div id="timerRow">
-      <div id="timerControls">
-        <button id="timerSetOpen" class="btn" style="display:none;">⏱ Ställ in timer</button>
-        <div id="timerConfig">
-          <input id="timerInput" type="number" min="0" max="100" value="0" /> sek
-          <button id="timerConfirm" class="btn">✅ Bekräfta</button>
-          <button id="timerCancel" class="btn">✖</button>
-        </div>
-        <button id="timerToggle" class="btn" style="display:none;">🕒 Ta bort timer</button>
-      </div>
-      <div id="timerBar"><div id="timerFill"></div></div>
+    <br>
+    <div>
+      <input id="playerName" placeholder="Ditt namn / Your name" />
     </div>
-
-    <!-- Scoreboard + totals -->
-    <div id="scoreWrap">
-      <div id="scoreboard">
-        🧑 Axwell: <span id="scoreHost" class="score">0</span> | 👤 Gäst: <span id="scoreGuest" class="score">0</span>
-      </div>
-      <div id="totals">
-        <div id="hostTotals">Värd – Vinster: 0 Förluster: 0</div>
-        <div id="guestTotals">Gäst – Vinster: 0 Förluster: 0</div>
-      </div>
-      <div id="youAre"></div>
-    </div>
-
-    <!-- Game area -->
-    <div id="gameArea">
-      <canvas id="hangman"></canvas>
-      <div id="word">_</div>
-      <div id="letters"></div>
-      <div id="message"></div>
-      <div id="actions">
-        <button id="restartBtn" class="actionBtn">🔁 Spela igen</button>
-        <button id="newWordBtn" class="actionBtn">✍️ Välj nytt ord</button>
-      </div>
-      <div id="share"></div>
-      <div id="lobby">⏳ Väntar på spelare ...</div>
+    <br>
+    <button id="createBtn">🆕 Skapa spel</button>
+    <br><br>
+    <div>
+      <input id="joinCode" placeholder="Spelkod (t.ex. ab123)" />
+      <button id="joinBtn">🔗 Gå med i spel</button>
     </div>
   </div>
 
+  <!-- Game screen -->
+  <div id="game" class="card">
+    <h1>HÄNGA GUBBE</h1>
+    <div id="turnIndicator">⏳ Väntar på tur...</div>
+    <div id="share"></div>
+    <div id="scoreboard">🧑 0 | 👤 0</div>
+    <canvas id="hangman"></canvas>
+    <div id="word">_</div>
+    <div id="letters"></div>
+    <div id="chat"></div>
+    <button id="restartBtn" class="hidden">🔁 Spela igen</button>
+  </div>
+
   <script>
-  window.onload = () => {
-    /* ---------- Firebase ---------- */
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
-      authDomain: "hangman-6a99e.firebaseapp.com",
-      databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "hangman-6a99e",
-      storageBucket: "hangman-6a99e.firebasestorage.app",
-      messagingSenderId: "992689481911",
-      appId: "1:992689481911:web:6461e931ba4d96879ec532",
-      measurementId: "G-W1HFVTC23L"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    /* ---------- DOM ---------- */
-    const chatList = document.getElementById("chatList");
-    const chatText = document.getElementById("chatText");
-    const chatSend = document.getElementById("chatSend");
-    const typingIndicator = document.getElementById("typingIndicator");
-    const timerSetOpen = document.getElementById("timerSetOpen");
-    const timerConfig = document.getElementById("timerConfig");
-    const timerInput = document.getElementById("timerInput");
-    const timerConfirm = document.getElementById("timerConfirm");
-    const timerCancel = document.getElementById("timerCancel");
-    const timerToggle = document.getElementById("timerToggle");
-    const timerBar = document.getElementById("timerBar");
-    const timerFill = document.getElementById("timerFill");
-    const scoreHostEl = document.getElementById("scoreHost");
-    const scoreGuestEl = document.getElementById("scoreGuest");
-    const hostTotalsEl = document.getElementById("hostTotals");
-    const guestTotalsEl = document.getElementById("guestTotals");
-    const youAreEl = document.getElementById("youAre");
-    const canvas = document.getElementById("hangman");
-    const ctx = canvas.getContext("2d");
-    const lettersDiv = document.getElementById("letters");
-    const wordDiv = document.getElementById("word");
-    const msg = document.getElementById("message");
-    const lobbyDiv = document.getElementById("lobby");
-    const shareEl = document.getElementById("share");
-    const restartBtn = document.getElementById("restartBtn");
-    const newWordBtn = document.getElementById("newWordBtn");
-
-    /* ---------- State ---------- */
-    const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
-    const params = new URLSearchParams(location.search);
-    const gameId = params.get("game");
-
-    let isHost = false;
-    let nickname = "Axwell";
-
-    // profiles
-    let profileId = localStorage.getItem("profileId");
-    if (!profileId){
-      profileId = "u_" + Math.random().toString(36).slice(2,10);
-      localStorage.setItem("profileId", profileId);
-    }
-
-    // anim
-    let gradPhase = 0;
-    let currentWrong = 0;
-
-    // scores
-    let lastScores = {host:0, guest:0};
-    let lastUpdateKey = "";
-
-    // timer
-    let timerSeconds = 0;
-    let roundStartMs = 0;
-    let timerRAF = null;
-    let timerEndedThisRound = false;
-
-    // presence
-    const connectedRef = db.ref(".info/connected");
-
-    /* ---------- Utils ---------- */
-    function vibrate(p){ if(navigator.vibrate) try{navigator.vibrate(p);}catch(e){} }
-    function showFade(text, t=2200){ msg.textContent=text; msg.classList.remove("fade"); setTimeout(()=>msg.classList.add("fade"), t); }
-    function popScore(el){ el.style.transform="scale(1.25)"; setTimeout(()=>el.style.transform="scale(1)", 220); }
-    function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function fmtTime(ts){ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
-    function resizeCanvas(){ const w = Math.min(360, Math.floor(window.innerWidth*0.9)); const h = Math.floor(w*1.25); canvas.width = w; canvas.height = h; drawAll(currentWrong); }
-    window.addEventListener("resize", resizeCanvas);
-
-    /* ---------- Particles ---------- */
-    const bg = document.getElementById("bgParticles");
-    const g2 = bg.getContext("2d");
-    function resizeBg(){ bg.width = innerWidth; bg.height = innerHeight; }
-    window.addEventListener("resize", resizeBg); resizeBg();
-    const particles = Array.from({length:28}).map(()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:1.5+Math.random()*3,dx:(-0.2+Math.random()*0.4),dy:(0.1+Math.random()*0.3)}));
-    function drawParticles(){
-      g2.clearRect(0,0,bg.width,bg.height);
-      particles.forEach(p=>{
-        p.x+=p.dx; p.y+=p.dy;
-        if(p.x<-20) p.x=bg.width+20;
-        if(p.x>bg.width+20) p.x=-20;
-        if(p.y>bg.height+20){p.y=-20; p.x=Math.random()*bg.width;}
-        const grd=g2.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*6);
-        grd.addColorStop(0,"#ec4899");
-        grd.addColorStop(1,"#a855f7");
-        g2.globalAlpha=.18; g2.fillStyle=grd; g2.beginPath(); g2.arc(p.x,p.y,p.r*3,0,Math.PI*2); g2.fill(); g2.globalAlpha=1;
-      });
-      requestAnimationFrame(drawParticles);
-    }
-    requestAnimationFrame(drawParticles);
-
-    /* ---------- Hangman (animated gradient) ---------- */
-    function strokeGradient(){
-      const w=canvas.width,h=canvas.height;
-      const g=ctx.createLinearGradient(
-        w*(0.2+0.6*gradPhase),0,
-        0,h*(0.8+0.6*(1-gradPhase))
-      );
-      g.addColorStop(0,"#ec4899");
-      g.addColorStop(0.5,"#a855f7");
-      g.addColorStop(1,"#ec4899");
-      return g;
-    }
-    function drawAll(wrong){
-      const cw=canvas.width,ch=canvas.height;
-      const sX=cw/200,sY=ch/250;
-      const lw=2*Math.min(sX,sY);
-      ctx.clearRect(0,0,cw,ch);
-      ctx.lineWidth = lw; ctx.strokeStyle = strokeGradient();
-      // base + gallows
-      ctx.beginPath();
-      ctx.moveTo(10*sX,240*sY); ctx.lineTo(190*sX,240*sY);
-      ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sX,20*sY); ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY);
-      ctx.stroke();
-      if(wrong>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke();}
-      if(wrong>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke();}
-      if(wrong>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke();}
-      if(wrong>3){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke();}
-      if(wrong>4){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke();}
-      if(wrong>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
-    }
-    function loop(){ gradPhase+=0.003; if(gradPhase>1) gradPhase-=1; drawAll(currentWrong); requestAnimationFrame(loop); }
-    requestAnimationFrame(loop);
-
-    /* ---------- Word & Letters ---------- */
-    function showWord(word, guesses){
-      wordDiv.textContent = (word||"").split("").map(l => (guesses||[]).includes(l)?l:"_").join(" ");
-    }
-    function createLetterButtons(id){
-      lettersDiv.innerHTML="";
-      letters.forEach(ch=>{
-        const b=document.createElement("button");
-        b.textContent=ch;
-        b.onclick=async()=>{
-          if(b.disabled) return;
-          b.disabled = true;
-          const snap=await db.ref("games/"+id).get();
-          const data=snap.val()||{};
-          if(!data.word || data.over) return;
-          const myRole = (nickname==="Axwell")?"host":"guest";
-          if(data.turn !== myRole){ alert("Inte din tur!"); return; }
-          const guesses = Array.isArray(data.guesses)? data.guesses : [];
-          if(guesses.includes(ch)) return;
-          let newGuesses=[...guesses, ch];
-          let newWrong = data.wrong || 0;
-          let over = !!data.over;
-          let winner = data.winner || null;
-          const scores = data.scores || {host:0, guest:0};
-          if(!data.word.includes(ch)){
-            newWrong++;
-            vibrate(80);
-          }
-          const solved = data.word.split("").every(l => newGuesses.includes(l));
-          if(solved){
-            over=true; winner=data.turn; scores[winner]=(scores[winner]||0)+1; vibrate([120,60,120]);
-          } else if(newWrong>=6){
-            over=true; const opp=(data.turn==="host")?"guest":"host"; winner=opp; scores[opp]=(scores[opp]||0)+1; vibrate([120,60,120]);
-          }
-          await db.ref("games/"+id).update({guesses:newGuesses, wrong:newWrong, over, scores, winner});
-          b.classList.add(data.word.includes(ch)?"good":"bad");
-          setTimeout(()=>b.classList.remove("good","bad"),450);
-        };
-        lettersDiv.appendChild(b);
-      });
-    }
-
-    /* ---------- Presence ---------- */
-    function setupPresence(id, role){
-      connectedRef.on("value", snap=>{
-        if(snap.val()){
-          const pref = db.ref(`games/${id}/players/${role}`);
-          pref.onDisconnect().remove();
-        }
-      });
-    }
-
-    /* ---------- Timer ---------- */
-    function startTimerLoop(){
-      cancelTimerLoop();
-      if(timerSeconds<=0 || !roundStartMs){ timerBar.style.display="none"; return; }
-      timerBar.style.display = "block";
-      timerEndedThisRound = false;
-      const tick = async () =>{
-        const now=Date.now(), elapsed=Math.max(0, now - roundStartMs);
-        const remainMs=Math.max(0, timerSeconds*1000 - elapsed);
-        const pct = Math.max(0, Math.min(1, remainMs/(timerSeconds*1000)));
-        timerFill.style.width = (pct*100).toFixed(2)+"%";
-        // intensify as time runs out
-        timerFill.style.filter = `brightness(${1 + (1-pct)*0.6})`;
-        if(remainMs<=0 && !timerEndedThisRound){
-          timerEndedThisRound = true;
-          const snap = await db.ref("games/"+gameId).get();
-          const data = snap.val();
-          if(data && !data.over){
-            const opponent = (data.turn==="host")? "guest":"host";
-            const scores = data.scores || {host:0, guest:0};
-            scores[opponent] = (scores[opponent]||0)+1;
-            await db.ref("games/"+gameId).update({ over:true, scores, winner:opponent });
-            showFade("⏰ Tiden tog slut!");
-            vibrate([120,60,120]);
-          }
-        }
-        timerRAF = requestAnimationFrame(tick);
-      };
-      timerRAF = requestAnimationFrame(tick);
-    }
-    function cancelTimerLoop(){ if(timerRAF) cancelAnimationFrame(timerRAF); timerRAF=null; timerFill.style.width="0%"; }
-
-    /* ---------- Chat ---------- */
-    function appendChatMsg(obj, key){
-      const wrap = document.createElement("div");
-      wrap.className = "chatMsg";
-      wrap.dataset.key = key || "";
-      wrap.innerHTML = `
-        <div><b>${escapeHtml(obj.name||"??")}</b>: ${escapeHtml(obj.text||"")}</div>
-        <div class="chatMeta">${fmtTime(obj.ts||Date.now())}</div>
-      `;
-      chatList.appendChild(wrap);
-      chatList.scrollTop = chatList.scrollHeight;
-      // auto-fade after 15s, then remove
-      setTimeout(()=>wrap.classList.add("fadeout"), 15000);
-      setTimeout(()=>{ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 16500);
-    }
-    function setupChat(id){
-      db.ref(`games/${id}/chat`).limitToLast(50).on("child_added", snap=>{ appendChatMsg(snap.val(), snap.key); });
-      // typing
-      let typingTimeout=null;
-      chatText.addEventListener("input", async ()=>{
-        await db.ref(`games/${id}/typing/${isHost?'host':'guest'}`).set(true);
-        clearTimeout(typingTimeout);
-        typingTimeout=setTimeout(()=>db.ref(`games/${id}/typing/${isHost?'host':'guest'}`).set(false), 900);
-      });
-      db.ref(`games/${id}/typing`).on("value", s=>{
-        const t=s.val()||{}; const otherTyping = isHost? t.guest : t.host; typingIndicator.textContent = otherTyping? "✍️ Skriver..." : "";
-      });
-      async function sendChat(){
-        const text = chatText.value.trim(); if(!text) return; chatText.value="";
-        await db.ref(`games/${id}/chat`).push({ name:nickname, text, ts:firebase.database.ServerValue.TIMESTAMP });
-        db.ref(`games/${id}/typing/${isHost?'host':'guest'}`).set(false);
-      }
-      chatSend.onclick = sendChat;
-      chatText.addEventListener("keydown", e=>{ if(e.key==="Enter") sendChat(); });
-    }
-
-    /* ---------- Create or Join ---------- */
-    async function startAsHost(){
-      const word = prompt("Välj ett ord att starta spel:"); if(!word) return;
-      const id = "hangman-"+Math.random().toString(36).substr(2,5);
-      await db.ref("games/"+id).set({
-        word: word.toUpperCase(), guesses:[], wrong:0, over:false,
-        players: { host:"Axwell", hostPid: profileId },
-        turn: "guest",
-        scores: { host:0, guest:0 },
-        settings: { timerSeconds: 0 },
-        roundStartMs: firebase.database.ServerValue.TIMESTAMP,
-        winner: null,
-        awardRecorded: false
-      });
-      await db.ref("users/"+profileId).update({ name:"Axwell", wins:0, losses:0 });
-      localStorage.setItem("createdGameId", id);
-      location.href = `${location.pathname}?game=${id}`;
-    }
-
-    function updateTimerControlsVisibility(data){
-      const guestJoined = !!(data.players && data.players.guest);
-      const roundActive = !data.over;
-      const t = (data.settings && data.settings.timerSeconds) || 0;
-      if(isHost && guestJoined && roundActive){
-        timerSetOpen.style.display = (t>0)? "none":"inline-block";
-        timerToggle.style.display = (t>0)? "inline-block":"none";
-      } else {
-        timerSetOpen.style.display = "none";
-        timerToggle.style.display = "none";
-        timerConfig.style.display = "none";
-      }
-    }
-
-    function listenGame(id){
-      db.ref("games/"+id).on("value", async snap=>{
-        const data = snap.val();
-        if(!data || !data.word || !Array.isArray(data.guesses)) return;
-        // de-dupe
-        const key = JSON.stringify([data.guesses, data.wrong, data.over, data.turn, data.scores, data.settings, data.roundStartMs, data.winner, data.awardRecorded, data.players]);
-        if(key === lastUpdateKey) return; lastUpdateKey = key;
-
-        // timer settings
-        timerSeconds = (data.settings && data.settings.timerSeconds) || 0;
-        roundStartMs = data.roundStartMs || 0;
-
-        // timer UI/loop
-        updateTimerControlsVisibility(data);
-        if(data.over || timerSeconds<=0){
-          cancelTimerLoop();
-          timerBar.style.display = (timerSeconds>0 && !data.over)?"block":"none";
-        } else {
-          timerBar.style.display="block";
-          if(isHost) startTimerLoop();
-        }
-
-        // word + drawing
-        const guesses = data.guesses || [];
-        showWord(data.word, guesses);
-        currentWrong = Number(data.wrong)||0;
-
-        // scores + bump
-        if((data.scores?.host||0)!==lastScores.host) popScore(scoreHostEl);
-        if((data.scores?.guest||0)!==lastScores.guest) popScore(scoreGuestEl);
-        lastScores = { host: data.scores?.host||0, guest: data.scores?.guest||0 };
-        scoreHostEl.textContent = lastScores.host;
-        scoreGuestEl.textContent = lastScores.guest;
-
-        // presence / lobby
-        const players = data.players || {};
-        const link = `${location.origin}${location.pathname}?game=${id}`;
-        shareEl.innerHTML = `Dela denna länk: <a href="${link}" target="_blank" rel="noopener">${link}</a>`;
-        lobbyDiv.innerHTML = `🧑 ${players.host || "Okänd"} (värd) ${players.hostPid? "— PID: "+players.hostPid:""}<br>
-+ 👤 ${players.guest || "Ingen ansluten ännu"} ${players.guestPid? "— PID: "+players.guestPid:""}<br>
-+ ${players.guest? "🎮 Båda spelare anslutna!":"⏳ Väntar på spelare ..."}`;
-
-        // buttons state based on guesses used
-        const allBtns = document.querySelectorAll("#letters button");
-        allBtns.forEach(b=>b.disabled=false);
-        allBtns.forEach(b=>{ if(guesses.includes(b.textContent)) b.disabled=true; });
-
-        // end-of-round controls & persistent awards (host only)
-        if(data.over){
-          cancelTimerLoop();
-          msg.textContent = data.winner
-            ? (data.winner==="host" ? "🎉 Värden vann!" : "🎉 Gästen vann!")
-            : (data.wrong>=6 ? `💀 Du förlorade! Ordet var ${data.word}` : "🎉 Du vann!");
-          restartBtn.style.display="inline-block";
-          newWordBtn.style.display="inline-block";
-
-          // persist win/loss once
-          if(isHost && !data.awardRecorded && data.winner && data.players){
-            const winPid = data.winner==="host" ? data.players.hostPid : data.players.guestPid;
-            const losePid = data.winner==="host" ? data.players.guestPid : data.players.hostPid;
-            if(winPid) await db.ref(`users/${winPid}/wins`).transaction(v=> (v||0)+1);
-            if(losePid) await db.ref(`users/${losePid}/losses`).transaction(v=> (v||0)+1);
-            await db.ref(`games/${id}`).update({ awardRecorded:true });
-          }
-        } else {
-          restartBtn.style.display="none";
-          newWordBtn.style.display="none";
-          msg.textContent="";
-        }
-      });
-    }
-
-    async function loadTotals(){
-      const psnap = await db.ref(`games/${gameId}/players`).get();
-      const p = psnap.val()||{};
-      if(p.hostPid) db.ref(`users/${p.hostPid}`).on("value",s=>{ const u=s.val()||{}; hostTotalsEl.textContent = `Värd – Vinster: ${u.wins||0} Förluster: ${u.losses||0}`; });
-      if(p.guestPid) db.ref(`users/${p.guestPid}`).on("value",s=>{ const u=s.val()||{}; guestTotalsEl.textContent = `Gäst – Vinster: ${u.wins||0} Förluster: ${u.losses||0}`; });
-    }
-
-    /* ---------- Actions ---------- */
-    restartBtn.onclick = async ()=>{
-      const s=await db.ref("games/"+gameId).get(); const d=s.val(); if(!d) return;
-      await db.ref("games/"+gameId).update({
-        guesses:[], wrong:0, over:false, winner:null, awardRecorded:false,
-        roundStartMs: firebase.database.ServerValue.TIMESTAMP
-      });
-      currentWrong=0; createLetterButtons(gameId); showFade("🔁 Ny runda!");
-    };
-
-    newWordBtn.onclick = async ()=>{
-      const s=await db.ref("games/"+gameId).get(); const d=s.val(); if(!d?.over) return alert("Rundan är inte slut än!");
-      // typing indicator (choosing word)
-      await db.ref(`games/${gameId}/typing/${isHost?'host':'guest'}`).set(true);
-      const newWord=(prompt("Ange nytt ord:")||"").toUpperCase();
-      await db.ref(`games/${gameId}/typing/${isHost?'host':'guest'}`).set(false);
-      if(!newWord.match(/^[A-ZÅÄÖ]+$/)) return alert("Endast bokstäver (A–Ö) tillåtna!");
-      const nextTurn = d.turn==="host" ? "guest":"host";
-      await db.ref("games/"+gameId).set({
-        word:newWord, guesses:[], wrong:0, over:false, players:d.players, turn:nextTurn,
-        scores:d.scores, settings: d.settings || { timerSeconds:0 },
-        roundStartMs: firebase.database.ServerValue.TIMESTAMP, winner:null, awardRecorded:false
-      });
-      currentWrong=0; createLetterButtons(gameId); showFade("✍️ Nytt ord valt!");
-    };
-
-    // Timer control UI
-    timerSetOpen.onclick = ()=>{ timerConfig.style.display="flex"; timerSetOpen.style.display="none"; };
-    timerCancel.onclick = ()=>{ timerConfig.style.display="none"; timerSetOpen.style.display="inline-block"; };
-    timerConfirm.onclick = async ()=>{
-      const val = Math.max(0, Math.min(100, Number(timerInput.value||0)));
-      await db.ref(`games/${gameId}/settings`).update({ timerSeconds:val });
-      await db.ref(`games/${gameId}`).update({ roundStartMs: firebase.database.ServerValue.TIMESTAMP });
-      timerConfig.style.display="none";
-    };
-    timerToggle.onclick = async ()=>{ await db.ref(`games/${gameId}/settings`).update({ timerSeconds:0 }); };
-
-    /* ---------- Boot ---------- */
-    resizeCanvas();
-    if(!gameId){
-      // Offer to start as host immediately
-      startAsHost();
-      return;
-    }
-
-    // join flow
-    db.ref("games/"+gameId).get().then(async snap=>{
-      if(!snap.exists()){
-        alert("❌ Spelet kunde inte hittas.");
-        return;
-      }
-      const data = snap.val();
-      const creator = (localStorage.getItem("createdGameId")===gameId);
-      isHost = creator;
-      if(!creator){
-        if(!sessionStorage.getItem("askedNick")){
-          const asked = prompt("Ange ditt namn:") || "Gäst";
-          sessionStorage.setItem("askedNick","1");
-          localStorage.setItem("hangmanNick", asked);
-        }
-        nickname = localStorage.getItem("hangmanNick") || "Gäst";
-        await db.ref(`games/${gameId}/players`).update({ guest:nickname, guestPid:profileId });
-        await db.ref("users/"+profileId).update({ name:nickname, wins:0, losses:0 });
-      } else {
-        nickname = "Axwell";
-        await db.ref("users/"+profileId).update({ name:"Axwell", wins:0, losses:0 });
-      }
-
-      setupPresence(gameId, creator?"host":"guest");
-      youAreEl.textContent = `Du är: ${nickname}`;
-
-      // initial UI
-      createLetterButtons(gameId);
-      listenGame(gameId);
-      setupChat(gameId);
-      loadTotals();
-
-      // initial visibility for timer controls
-      updateTimerControlsVisibility(data);
-
-      const link = `${location.origin}${location.pathname}?game=${gameId}`;
-      shareEl.innerHTML = `Dela denna länk: <a href="${link}" target="_blank" rel="noopener">${link}</a>`;
-
-      // show initial word/guesses
-      showWord(data.word, data.guesses || []);
-    });
+  // --- Firebase init ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
+    authDomain: "hangman-6a99e.firebaseapp.com",
+    databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "hangman-6a99e",
+    storageBucket: "hangman-6a99e.firebasestorage.app",
+    messagingSenderId: "992689481911",
+    appId: "1:992689481911:web:6461e931ba4d96879ec532",
+    measurementId: "G-W1HFVTC23L"
   };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const startDiv = document.getElementById("start");
+  const gameDiv = document.getElementById("game");
+  const playerNameInput = document.getElementById("playerName");
+  const joinCodeInput = document.getElementById("joinCode");
+  const langSelect = document.getElementById("lang");
+  const createBtn = document.getElementById("createBtn");
+  const joinBtn = document.getElementById("joinBtn");
+
+  const turnEl = document.getElementById("turnIndicator");
+  const shareEl = document.getElementById("share");
+  const wordDiv = document.getElementById("word");
+  const lettersDiv = document.getElementById("letters");
+  const chatDiv = document.getElementById("chat");
+  const scoreEl = document.getElementById("scoreboard");
+
+  let isHost = false;
+  let nickname = "";
+  let gameId = "";
+  let lang = "sv";
+
+  const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
+  let currentWrong = 0;
+
+  createBtn.onclick = async () => {
+    nickname = playerNameInput.value.trim() || "Värd";
+    lang = langSelect.value;
+    const word = prompt(lang === "sv" ? "Ange ett ord att spela med:" : "Enter a word to start:");
+    if (!word) return;
+    const id = "hangman-" + Math.random().toString(36).substr(2,5);
+    await db.ref("games/" + id).set({
+      word: word.toUpperCase(),
+      guesses: [],
+      wrong: 0,
+      over: false,
+      players: { host: nickname },
+      turn: "guest",
+      scores: { host: 0, guest: 0 }
+    });
+    isHost = true;
+    gameId = id;
+    startGame();
+  };
+
+  joinBtn.onclick = async () => {
+    nickname = playerNameInput.value.trim() || "Gäst";
+    lang = langSelect.value;
+    const code = joinCodeInput.value.trim();
+    if (!code) return alert("Ange spelkod.");
+    const id = "hangman-" + code;
+    const snap = await db.ref("games/" + id).get();
+    if (!snap.exists()) return alert("Spelet hittades inte.");
+    await db.ref("games/" + id + "/players").update({ guest: nickname });
+    isHost = false;
+    gameId = id;
+    startGame();
+  };
+
+  function startGame() {
+    startDiv.style.display = "none";
+    gameDiv.style.display = "block";
+    createLetterButtons();
+    listenGame();
+    const link = `${location.origin}${location.pathname}?game=${gameId}`;
+    shareEl.innerHTML = (lang==="sv" ? "Dela denna länk: " : "Share this link: ") + `<a href="${link}" target="_blank">${link}</a>`;
+  }
+
+  function createLetterButtons() {
+    lettersDiv.innerHTML = "";
+    letters.forEach(ch => {
+      const b = document.createElement("button");
+      b.textContent = ch;
+      b.onclick = async () => {
+        const snap = await db.ref("games/" + gameId).get();
+        const d = snap.val();
+        if (!d || d.over) return;
+        const myRole = isHost ? "host" : "guest";
+        if (d.turn !== myRole) return alert(lang==="sv"?"Inte din tur!":"Not your turn!");
+        const guesses = d.guesses || [];
+        if (guesses.includes(ch)) return;
+        let newGuesses = [...guesses, ch];
+        let newWrong = d.wrong || 0;
+        let over = false;
+        let winner = null;
+        const scores = d.scores || {host:0, guest:0};
+        if (!d.word.includes(ch)) newWrong++;
+        const solved = d.word.split("").every(l => newGuesses.includes(l));
+        if (solved) { over = true; winner = d.turn; scores[winner]++; }
+        else if (newWrong >= 6) { over = true; winner = d.turn==="host"?"guest":"host"; scores[winner]++; }
+        await db.ref("games/" + gameId).update({ guesses:newGuesses, wrong:newWrong, over, scores, winner });
+      };
+      lettersDiv.appendChild(b);
+    });
+  }
+
+  function showWord(word, guesses) {
+    wordDiv.textContent = word.split("").map(l => guesses.includes(l)?l:"_").join(" ");
+  }
+
+  function updateTurnIndicator(turn) {
+    if ((isHost && turn === "host") || (!isHost && turn === "guest"))
+      turnEl.textContent = lang==="sv" ? "🎯 Din tur!" : "🎯 Your turn!";
+    else
+      turnEl.textContent = lang==="sv" ? "⏳ Motståndarens tur..." : "⏳ Opponent's turn...";
+  }
+
+  function listenGame() {
+    db.ref("games/" + gameId).on("value", snap => {
+      const d = snap.val() || {};
+      showWord(d.word || "", d.guesses || []);
+      updateTurnIndicator(d.turn);
+      scoreEl.textContent = `🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`;
+      const allBtns = lettersDiv.querySelectorAll("button");
+      allBtns.forEach(b => b.disabled = (d.guesses||[]).includes(b.textContent));
+      if (d.over && d.winner) {
+        const msg = (lang==="sv")
+          ? (d.winner==="host"?"🎉 Värden vann!":"🎉 Gästen vann!")
+          : (d.winner==="host"?"🎉 Host won!":"🎉 Guest won!");
+        chatDiv.innerHTML = `<div>${msg}</div>`;
+      }
+    });
+  }
   </script>
 </body>
 </html>
