@@ -696,7 +696,13 @@ window.onload = () => {
     // initial visibility for timer controls
     updateTimerControlsVisibility(data);
   });
-};
+// show game area immediately
+createLetterButtons(gameId);
+shareEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${gameId}" target="_blank">${location.origin}${location.pathname}?game=${gameId}</a>`;
+showWord(data.word, data.guesses || []);
+});
+}; // ✅ closes the .then() and main function
+
 </script>
 </body>
 </html>
