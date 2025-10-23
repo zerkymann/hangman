@@ -687,22 +687,18 @@ window.onload = () => {
     setupPresence(gameId, creator?"host":"guest");
     youAreEl.textContent = `Du är: ${nickname}`;
 
-    // initial UI
+    // Initialize UI and listeners
     createLetterButtons(gameId);
     listenGame(gameId);
     setupChat(gameId);
     loadTotals();
-
-    // initial visibility for timer controls
     updateTimerControlsVisibility(data);
-  });
-// show game area immediately
-createLetterButtons(gameId);
-shareEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${gameId}" target="_blank">${location.origin}${location.pathname}?game=${gameId}</a>`;
-showWord(data.word, data.guesses || []);
-});
-}; // ✅ closes the .then() and main function
 
-</script>
-</body>
-</html>
+    // Show link + word
+    shareEl.innerHTML = `Dela denna länk: <a href="${location.origin}${location.pathname}?game=${gameId}" target="_blank">${location.origin}${location.pathname}?game=${gameId}</a>`;
+    showWord(data.word, data.guesses || []);
+  }).catch(err=>{
+    console.error("Error loading game:", err);
+    alert("Fel vid laddning av speldata.");
+  });
+}; // ✅ closes window.onload
