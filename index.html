@@ -39,7 +39,7 @@
       background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin: 0 0 12px;
+      margin: 0 0 16px;
     }
 
     .card {
@@ -48,7 +48,7 @@
       backdrop-filter: blur(12px);
       box-shadow: 0 0 25px rgba(0,0,0,0.6);
       width: min(720px, 96vw);
-      padding: 20px;
+      padding: 24px;
       text-align: center;
     }
 
@@ -56,12 +56,14 @@
       font-family: inherit;
       border-radius: 10px;
       border: 1px solid #333;
-      padding: 0.7rem 1rem;
+      padding: 0.75rem 1rem;
       font-size: 1rem;
+      box-sizing: border-box;
+      width: 100%;
+      margin-top: 12px;
     }
 
     input {
-      width: 100%;
       background: #222;
       color: #fff;
     }
@@ -73,16 +75,20 @@
       border: none;
       color: #111;
       box-shadow: 0 6px 18px rgba(168,85,247,.25);
-      transition: transform 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     button:hover {
       transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(168,85,247,.35);
     }
 
-    .hidden { display: none; }
-    #game { display: none; }
+    #start input + button,
+    #start button + input {
+      margin-top: 16px;
+    }
 
+    #game { display: none; }
     #letters {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
@@ -131,7 +137,15 @@
       -webkit-text-fill-color: transparent;
     }
 
-    canvas { background: #111; border-radius: 10px; margin-top: 10px; width: 100%; aspect-ratio: 4/3; }
+    canvas {
+      background: #111;
+      border-radius: 10px;
+      margin-top: 10px;
+      width: 100%;
+      aspect-ratio: 4/3;
+    }
+
+    .hidden { display: none; }
   </style>
 </head>
 
@@ -146,17 +160,13 @@
         <option value="en">English</option>
       </select>
     </div>
-    <br>
-    <div>
-      <input id="playerName" placeholder="Ditt namn / Your name" />
-    </div>
-    <br>
+
+    <input id="playerName" placeholder="Ditt namn / Your name" />
+
     <button id="createBtn">🆕 Skapa spel</button>
-    <br><br>
-    <div>
-      <input id="joinCode" placeholder="Spelkod (t.ex. ab123)" />
-      <button id="joinBtn">🔗 Gå med i spel</button>
-    </div>
+
+    <input id="joinCode" placeholder="Spelkod (t.ex. ab123)" />
+    <button id="joinBtn">🔗 Gå med i spel</button>
   </div>
 
   <!-- Game screen -->
@@ -206,7 +216,6 @@
   let nickname = "";
   let gameId = "";
   let lang = "sv";
-
   const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
   let currentWrong = 0;
 
