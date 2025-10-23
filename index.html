@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>HÄNGA GUBBE</title>
 
-  <!-- Fonts & Firebase -->
+  <!-- =========================================================
+       FONTS & FIREBASE SDKs (samma projekt som önskat)
+  ========================================================== -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 
   <style>
+    /* =========================================================
+       DESIGN-TOKENS / TEMA (glassmorphism + neon rosa/lila)
+       (GAMMALT + oförändrat, men samlat här)
+    ========================================================== */
     :root{
       --grad-a:#ec4899; --grad-b:#a855f7;
       --bg1:#0e0e11; --bg2:#1a1a1f;
@@ -18,25 +24,36 @@
       --text:#fff; --text-dim:#bdbdbd;
       --ok:#22c55e; --bad:#ef4444;
     }
+
+    /* Grundlayout (GAMMALT, justerat till grid-center) */
     *{box-sizing:border-box}
     body{
       margin:0; font-family:"Poppins",sans-serif; color:var(--text);
       background: radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
       min-height:100dvh; display:grid; place-items:center; padding:10px;
     }
+
+    /* Rubrikstil (GAMMALT) */
     h1{
       font-weight:700; text-align:center; margin:0 0 16px;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
+
+    /* Kortshell (GAMMALT) */
     .card{
       width:min(860px,96vw); background:var(--panel); border-radius:18px; backdrop-filter:blur(12px);
       box-shadow:0 0 25px rgba(0,0,0,.6); padding:22px; position:relative;
     }
+
+    /* Form-layouter (NYTT: konsekvent spacing och block-layout för att
+       undvika "överlapp" mellan fält/knappar) */
     .stack > *{display:block; width:100%; margin-top:12px}
     .row{display:flex; gap:10px; align-items:center}
     .row > *{flex:1}
     label{font-size:.95rem; color:var(--text-dim)}
+
+    /* Inputs & knappar (GAMMALT + uppdateringar) */
     input,select,button{
       font-family:inherit; font-size:1rem; border-radius:12px; border:1px solid #333; padding:.8rem 1rem;
       background:#222; color:#fff; display:block; width:100%;
@@ -47,24 +64,23 @@
       box-shadow:0 6px 18px rgba(168,85,247,.25); transition:transform .15s ease, box-shadow .15s ease;
     }
     button:hover{transform:translateY(-2px); box-shadow:0 8px 22px rgba(168,85,247,.35)}
-    .btn-ghost{
+    .btn-ghost{ /* sekundär knapp (GAMMALT) */
       background:transparent; color:var(--text); border:1px solid #3a3a3f; box-shadow:none;
     }
     .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:8px}
     .dim{color:var(--text-dim)}
     .hidden{display:none !important}
 
-    /* Loading spinner */
-    .loading{
-      display:flex; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); padding:12px 0;
-    }
-    .spinner{
-      width:18px;height:18px;border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%;
-      animation:spin 1s linear infinite;
-    }
+    /* Ikon-tags på startknappar (GAMMALT) */
+    .start-icons{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+    .tag{font-size:.85rem; color:#111; background:rgba(255,255,255,.5); padding:.15rem .45rem; border-radius:999px; margin-left:.5rem}
+
+    /* Laddnings-indikator (NYTT: spinner) */
+    .loading{display:flex; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); padding:12px 0}
+    .spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* Game layout */
+    /* Spel-UI (GAMMALT) */
     #game{display:none}
     #share{font-size:.9rem; color:var(--text-dim); word-break:break-all; text-align:center}
     #scoreboard{
@@ -72,21 +88,35 @@
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    #turnIndicator{margin-top:8px; text-align:center; font-weight:600; color:var(--text-dim)}
+    #turnIndicator{margin-top:8px; text-align:center; font-weight:600; color:var(--text-dim); transition:opacity .25s, transform .25s}
+    /* NYTT: "flash" vid turbyte */
+    .turn-flash{opacity:0; transform:translateY(-4px)}
+
+    /* Canvas (GAMMALT) */
     #hangman{width:100%; aspect-ratio:200/250; background:#111; border:1px solid #333; border-radius:12px; margin-top:12px}
+    /* NYTT: "shake" vid felgissning */
+    .shake{animation:shake .3s ease}
+    @keyframes shake{
+      0%{transform:translateX(0)} 25%{transform:translateX(-4px)} 50%{transform:translateX(4px)} 75%{transform:translateX(-3px)} 100%{transform:translateX(0)}
+    }
+
+    /* Ordet (GAMMALT) */
     #word{letter-spacing:.25em; font-size:clamp(1.2rem,4.5vw,1.8rem); text-align:center; margin-top:10px}
 
-    /* Timer bar (above letters) */
+    /* TIMER-BAR (NYTT: placerad ovanför bokstäverna) */
     #timerBar{margin:8px 0 0; width:100%; height:12px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none; position:relative}
     #timerFill{height:100%; width:0%; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s linear, filter .2s linear}
+    /* NYTT: pulsera sista 3 sekunderna */
+    .pulse{animation:pulse 0.8s ease-in-out infinite}
+    @keyframes pulse{0%{filter:brightness(1)} 50%{filter:brightness(1.5)} 100%{filter:brightness(1)}}
 
-    /* Letters */
+    /* Bokstäver (GAMMALT) */
     #letters{display:grid; grid-template-columns:repeat(auto-fit,minmax(36px,1fr)); gap:8px; margin-top:10px}
     #letters button{padding:.55rem .25rem; border-radius:10px; color:#111; font-weight:800; border:none;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 18px rgba(168,85,247,.25)}
     #letters button:disabled{opacity:.35; filter:saturate(.7); cursor:default}
 
-    /* Chat */
+    /* Chatt (GAMMALT + FIX) */
     #chatWrap{margin-top:10px; border:1px solid #2b2b30; border-radius:12px; background:rgba(255,255,255,.05); padding:10px}
     #chatList{max-height:140px; overflow:auto; display:flex; flex-direction:column; gap:6px}
     .chatMsg{background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px 8px; font-size:.95rem; line-height:1.25; opacity:1; transition:opacity .6s ease}
@@ -95,21 +125,21 @@
     #chatRow{display:flex; gap:8px; margin-top:8px}
     #chatText{background:#222; color:#fff; border:1px solid #333; border-radius:10px; padding:.6rem .9rem; flex:1}
     #chatSend{min-width:110px}
+    /* NYTT: viktig fix – global width:100% fick knappen att ta hela raden */
+    #chatRow button{width:auto; flex:0 0 auto;}
 
-    /* Action buttons */
+    /* Action-knappar (GAMMALT) */
     #actions{display:flex; gap:10px; justify-content:center; margin-top:10px; flex-wrap:wrap}
     .action{padding:.8rem 1rem; border-radius:12px; border:none; font-weight:700; cursor:pointer;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); color:#111; box-shadow:0 6px 18px rgba(168,85,247,.25)}
     .action.btn-ghost{background:transparent; color:var(--text); border:1px solid #3a3a3f; box-shadow:none}
-
-    /* Start icons row spacing */
-    .start-icons{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
-    .tag{font-size:.85rem; color:#111; background:rgba(255,255,255,.5); padding:.15rem .45rem; border-radius:999px; margin-left:.5rem}
   </style>
 </head>
 
 <body>
-  <!-- START SCREEN -->
+  <!-- =========================================================
+       STARTSKÄRM (NYTT: startmeny med språk + skapa/gå med)
+  ========================================================== -->
   <div id="start" class="card">
     <h1>HÄNGA GUBBE</h1>
     <div class="stack">
@@ -138,26 +168,35 @@
     </div>
   </div>
 
-  <!-- GAME SCREEN -->
+  <!-- =========================================================
+       SPELSKÄRM (GAMMALT + NYTT)
+  ========================================================== -->
   <div id="game" class="card">
     <h1>HÄNGA GUBBE</h1>
 
+    <!-- NYTT: Laddningsindikator (spinner) -->
     <div id="loading" class="loading hidden">
       <div class="spinner"></div>
       <div id="loadingText" class="dim">Laddar spel…</div>
     </div>
 
+    <!-- Delningslänk & Poäng (GAMMALT) -->
     <div id="share" class="dim"></div>
     <div id="scoreboard">🧑 0 | 👤 0</div>
+
+    <!-- Turindikator (NYTT: animering vid turbyte) -->
     <div id="turnIndicator" class="dim">⏳ Väntar på tur…</div>
 
+    <!-- Canvas (GAMMALT) -->
     <canvas id="hangman"></canvas>
+
+    <!-- Ordet (GAMMALT) -->
     <div id="word">_</div>
 
-    <!-- Timer controls (host) -->
+    <!-- Timer-kontroller (NYTT: host-only) -->
     <div class="toolbar">
       <button id="timerOpen" class="action hidden">⏱ Ställ in timer</button>
-      <div id="timerConfig" class="row hidden" style="max-width:420px; width:100%;">
+      <div id="timerConfig" class="row hidden" style="max-width:520px; width:100%;">
         <input id="timerInput" type="number" min="0" max="100" value="0" />
         <button id="timerConfirm" class="action">✅ Bekräfta</button>
         <button id="timerCancel" class="action btn-ghost">✖</button>
@@ -165,12 +204,13 @@
       </div>
     </div>
 
-    <!-- Timer bar (drains) -->
+    <!-- Timerstapel (NYTT: precis ovanför bokstäverna) -->
     <div id="timerBar"><div id="timerFill"></div></div>
 
+    <!-- Bokstäver (GAMMALT) -->
     <div id="letters"></div>
 
-    <!-- Chat -->
+    <!-- Chatt (GAMMALT + autofade + knapplayout-fix) -->
     <div id="chatWrap">
       <div id="chatList"></div>
       <div id="chatRow">
@@ -179,6 +219,7 @@
       </div>
     </div>
 
+    <!-- Åtgärder (GAMMALT + NYTT back-knapp) -->
     <div id="actions">
       <button id="restartBtn" class="action hidden">🔁 Spela igen</button>
       <button id="newWordBtn" class="action hidden">✍️ Välj nytt ord</button>
@@ -187,7 +228,9 @@
   </div>
 
   <script>
-    // ---------- Firebase ----------
+    /* =========================================================
+       FIREBASE (SAMMA PROJEKT)
+    ========================================================== */
     const firebaseConfig = {
       apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
       authDomain: "hangman-6a99e.firebaseapp.com",
@@ -201,7 +244,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ---------- DOM ----------
+    /* =========================================================
+       DOM-REFERENSER
+    ========================================================== */
     const startDiv = document.getElementById("start");
     const gameDiv = document.getElementById("game");
     const langSel = document.getElementById("lang");
@@ -240,10 +285,12 @@
     const newWordBtn = document.getElementById("newWordBtn");
     const backBtn = document.getElementById("backBtn");
 
-    // ---------- State ----------
+    /* =========================================================
+       STATE
+    ========================================================== */
     const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
     const params = new URLSearchParams(location.search);
-    const deepLinkGame = params.get("game"); // e.g., hangman-abc12
+    const deepLinkGame = params.get("game"); // t.ex. hangman-abc12
 
     let gameId = "";
     let isHost = false;
@@ -251,14 +298,15 @@
     let lang = localStorage.getItem("lang") || "sv";
     langSel.value = lang;
 
-    let timerSeconds = 0;       // configured seconds (0..100)
-    let roundStartMs = 0;       // server timestamp ms
-    let rafTimer = null;        // requestAnimationFrame id
+    let timerSeconds = 0;       // 0..100 (0 = av)
+    let roundStartMs = 0;       // starttid för rundan (ms)
+    let rafTimer = null;        // RAF-ID för timerloop
     let currentWrong = 0;
     let lastUpdateKey = "";
-    let typingTimeout = null;
 
-    // ---------- i18n ----------
+    /* =========================================================
+       I18N (gränssnitt börjar alltid sv/en men orden kan alltid vara SV/EN)
+    ========================================================== */
     const t = {
       sv: {
         name: "Ditt namn",
@@ -291,35 +339,36 @@
         confirmBack: "Are you sure you want to leave and delete the game? This cannot be undone."
       }
     };
-    function i18n() {
+    function i18n(){
       nameLabel.textContent = t[lang].name;
-      chatText.placeholder = lang === "sv" ? "Skriv ett meddelande..." : "Type a message...";
+      chatText.placeholder = (lang==="sv")?"Skriv ett meddelande...":"Type a message...";
       loadingText.textContent = t[lang].loading;
       localStorage.setItem("lang", lang);
     }
     i18n();
-    langSel.onchange = () => { lang = langSel.value; i18n(); }
+    langSel.onchange = ()=>{ lang = langSel.value; i18n(); }
 
-    // ---------- Utils ----------
+    /* =========================================================
+       UTILS
+    ========================================================== */
     function escapeHtml(s){return (s||"").replace(/[&<>\"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]))}
     function showLoading(show){ loading.classList.toggle("hidden", !show); }
-    function ensureNamePrompt() {
+    function ensureNamePrompt(){
       let stored = (nameInput.value || localStorage.getItem("nickname") || "").trim();
-      if (!stored) {
-        stored = prompt(lang==="sv"?"Ange ditt namn:":"Enter your name:") || "";
-      }
+      if(!stored){ stored = prompt(lang==="sv"?"Ange ditt namn:":"Enter your name:") || ""; }
       stored = stored.trim() || (lang==="sv"?"Gäst":"Guest");
-      nameInput.value = stored;
-      localStorage.setItem("nickname", stored);
+      nameInput.value = stored; localStorage.setItem("nickname", stored);
       return stored;
     }
     function linkFor(id){ return `${location.origin}${location.pathname}?game=${id}`; }
 
-    // ---------- Canvas draw ----------
+    /* =========================================================
+       CANVAS – RITA GALGE (GAMMALT) + RESIZE + SHAKE
+    ========================================================== */
     function resizeCanvas(){
-      const w = Math.min(480, Math.floor(window.innerWidth*0.95));
+      const w = Math.min(520, Math.floor(window.innerWidth*0.95));
       const h = Math.floor(w*1.25);
-      canvas.width=w; canvas.height=h; drawAll(currentWrong);
+      canvas.width = w; canvas.height = h; drawAll(currentWrong);
     }
     window.addEventListener("resize", resizeCanvas);
     function strokeGrad(){
@@ -329,7 +378,7 @@
     function drawAll(wrong){
       const cw=canvas.width,ch=canvas.height; const sX=cw/200,sY=ch/250; const lw=2*Math.min(sX,sY);
       ctx.clearRect(0,0,cw,ch); ctx.lineWidth=lw; ctx.strokeStyle=strokeGrad();
-      // base + gallows
+      // bas + galge
       ctx.beginPath(); ctx.moveTo(10*sX,240*sY); ctx.lineTo(190*sX,240*sY);
       ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sX,20*sY); ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY); ctx.stroke();
       if(wrong>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke();}
@@ -340,7 +389,9 @@
       if(wrong>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
     }
 
-    // ---------- Word & Letters ----------
+    /* =========================================================
+       ORDET & BOKSTÄVER (GAMMALT) + CANVAS-SHAKE PÅ FEL
+    ========================================================== */
     function showWord(word, guesses){ wordEl.textContent = (word||"").split("").map(l => (guesses||[]).includes(l)?l:"_").join(" "); }
     function buildLetters(){
       lettersEl.innerHTML="";
@@ -356,7 +407,8 @@
           let newGuesses=[...guesses, ch];
           let newWrong=d.wrong||0; let over=false; let winner=null;
           const scores=d.scores||{host:0, guest:0};
-          if(!d.word.includes(ch)) newWrong++;
+          const wasWrong = !d.word.includes(ch);
+          if(wasWrong){ newWrong++; /* NYTT: canvas-shake vid fel */ canvas.classList.add("shake"); setTimeout(()=>canvas.classList.remove("shake"), 300); }
           const solved = d.word.split("").every(l=>newGuesses.includes(l));
           if(solved){ over=true; winner=d.turn; scores[winner]++; }
           else if(newWrong>=6){ over=true; const opp=d.turn==="host"?"guest":"host"; winner=opp; scores[opp]++; }
@@ -366,16 +418,21 @@
       });
     }
 
-    // ---------- Timer ----------
+    /* =========================================================
+       TIMER (NYTT: 0–100s, pulserar sista 3s, host styr)
+    ========================================================== */
     function startTimerLoop(){
       stopTimerLoop();
       if(timerSeconds<=0 || !roundStartMs) { timerBar.style.display="none"; return; }
       timerBar.style.display="block";
-      const run = async ()=>{
+      const step = async ()=>{
         const now = Date.now();
         const remainMs = Math.max(0, (timerSeconds*1000) - Math.max(0, now - roundStartMs));
         const pct = Math.max(0, Math.min(1, remainMs/(timerSeconds*1000)));
         timerFill.style.width = (pct*100).toFixed(2)+"%";
+        // pulsera sista 3 sekunderna
+        if(remainMs<=3000) timerFill.classList.add("pulse"); else timerFill.classList.remove("pulse");
+        // extra luminans när det brinner i knutarna
         timerFill.style.filter = `brightness(${1+(1-pct)*0.6})`;
         if(remainMs<=0){
           const snap = await db.ref("games/"+gameId).get();
@@ -385,46 +442,50 @@
             const scores = d.scores || {host:0, guest:0};
             scores[opponent] = (scores[opponent]||0)+1;
             await db.ref("games/"+gameId).update({ over:true, scores, winner:opponent });
-            pushChat((lang==="sv")?t.sv.timeRanOut:t.en.timeRanOut);
+            pushTemporaryInfo(t[lang].timeRanOut);
           }
           timerBar.style.display="none";
-          return; // stop loop this frame
+          return;
         }
-        rafTimer = requestAnimationFrame(run);
+        rafTimer = requestAnimationFrame(step);
       };
-      rafTimer = requestAnimationFrame(run);
+      rafTimer = requestAnimationFrame(step);
     }
-    function stopTimerLoop(){ if(rafTimer) cancelAnimationFrame(rafTimer); rafTimer=null; timerFill.style.width="0%"; }
+    function stopTimerLoop(){ if(rafTimer) cancelAnimationFrame(rafTimer); rafTimer=null; timerFill.style.width="0%"; timerFill.classList.remove("pulse"); }
 
+    // Visa/dölj timerknappar (endast värd, när gäst är ansluten och runda pågår)
     function showTimerControls(data){
       const guestJoined = !!(data.players && data.players.guest);
       const roundActive = !data.over;
-      const t = data.settings?.timerSeconds || 0;
+      const tsec = data.settings?.timerSeconds || 0;
       if(isHost && guestJoined && roundActive){
-        timerOpen.classList.toggle("hidden", t>0);
-        timerConfig.classList.toggle("hidden", !(t===0 || timerConfig.classList.contains("force-show")));
-        timerOff.classList.toggle("hidden", t===0);
+        timerOpen.classList.toggle("hidden", tsec>0);
+        timerConfig.classList.toggle("hidden", tsec>0 ? true : false);
+        timerOff.classList.toggle("hidden", tsec===0);
       } else {
         timerOpen.classList.add("hidden");
         timerConfig.classList.add("hidden");
         timerOff.classList.add("hidden");
       }
     }
-
-    timerOpen.onclick = ()=>{ timerConfig.classList.remove("hidden"); timerConfig.classList.add("force-show"); timerOpen.classList.add("hidden"); };
-    timerCancel.onclick = ()=>{ timerConfig.classList.add("hidden"); timerConfig.classList.remove("force-show"); timerOpen.classList.remove("hidden"); };
+    // UI-händelser för timer
+    timerOpen.onclick = ()=>{ timerConfig.classList.remove("hidden"); timerOpen.classList.add("hidden"); };
+    timerCancel.onclick = ()=>{ timerConfig.classList.add("hidden"); timerOpen.classList.remove("hidden"); };
     timerConfirm.onclick = async ()=>{
       const val = Math.max(0, Math.min(100, Number(timerInput.value||0)));
       await db.ref("games/"+gameId+"/settings").update({ timerSeconds:val });
       await db.ref("games/"+gameId).update({ roundStartMs: firebase.database.ServerValue.TIMESTAMP });
-      timerConfig.classList.add("hidden"); timerConfig.classList.remove("force-show");
+      timerConfig.classList.add("hidden");
     };
     timerOff.onclick = async ()=>{
       await db.ref("games/"+gameId+"/settings").update({ timerSeconds:0 });
       await db.ref("games/"+gameId).update({ roundStartMs: 0 });
+      timerConfig.classList.add("hidden"); timerOpen.classList.remove("hidden");
     };
 
-    // ---------- Chat ----------
+    /* =========================================================
+       CHATT (GAMMALT + auto-fade)
+    ========================================================== */
     function pushChat(text){
       db.ref("games/"+gameId+"/chat").push({ name:nickname, text, ts:firebase.database.ServerValue.TIMESTAMP });
     }
@@ -432,8 +493,7 @@
       const wrap=document.createElement("div");
       wrap.className="chatMsg";
       wrap.innerHTML = `<div><b>${escapeHtml(obj.name||"??")}</b>: ${escapeHtml(obj.text||"")}</div><div class="chatMeta">${new Date(obj.ts||Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
-      chatList.appendChild(wrap);
-      chatList.scrollTop=chatList.scrollHeight;
+      chatList.appendChild(wrap); chatList.scrollTop=chatList.scrollHeight;
       setTimeout(()=>wrap.classList.add("fadeout"),15000);
       setTimeout(()=>wrap.remove(),16500);
     }
@@ -443,13 +503,21 @@
     };
     chatText.addEventListener("keydown", e=>{ if(e.key==="Enter") chatSend.click(); });
 
-    // ---------- Turn indicator ----------
+    /* =========================================================
+       TURINDIKATOR (NYTT: liten flash-animation)
+    ========================================================== */
     function setTurn(turn){
       const mine = isHost ? "host":"guest";
+      // flash-klass först, sedan uppdatera text, sedan ta bort flash → ger en liten slide/fade
+      turnEl.classList.add("turn-flash");
       turnEl.textContent = (turn===mine) ? t[lang].yourTurn : t[lang].oppTurn;
+      setTimeout(()=>turnEl.classList.remove("turn-flash"), 10);
     }
 
-    // ---------- Flow: Create / Join ----------
+    /* =========================================================
+       FLOW: SKAPA / GÅ MED / DIREKTLÄNK
+    ========================================================== */
+    // Skapa spel (värden)
     createBtn.onclick = async ()=>{
       nickname = (nameInput.value||"").trim() || (localStorage.getItem("nickname")||"").trim() || (lang==="sv"?"Värd":"Host");
       localStorage.setItem("nickname", nickname);
@@ -465,11 +533,10 @@
       openGame();
     };
 
-    joinBtn.onclick = ()=>{
-      joinArea.classList.remove("hidden");
-      joinCodeInput.focus();
-    };
+    // Öppna "gå med"-fält
+    joinBtn.onclick = ()=>{ joinArea.classList.remove("hidden"); joinCodeInput.focus(); };
 
+    // Gå med via kod (gäst)
     joinGo.onclick = async ()=>{
       const code = (joinCodeInput.value||"").trim();
       if(!code) return alert(t[lang].joinCodeMissing);
@@ -483,7 +550,7 @@
       openGame();
     };
 
-    // Handle deep links
+    // Direktlänk: ?game=hangman-xxxxx
     (async function handleDeepLink(){
       if(!deepLinkGame) return;
       startDiv.classList.add("hidden"); gameDiv.style.display="block"; resizeCanvas();
@@ -494,60 +561,48 @@
       if(!snap.exists()){ showLoading(false); alert(t[lang].notFound); backToStart(false); return; }
       const data = snap.val();
       if(!data.players || !data.players.host){ showLoading(false); alert(t[lang].notFound); backToStart(false); return; }
-      // If not host, attach as guest
-      if(!data.players.guest || data.players.guest === "Gäst" || data.players.guest === "Guest"){
-        await db.ref("games/"+id+"/players").update({ guest:nickname });
-      }
-      isHost = false;
-      gameId = id;
-      initGameListeners();
-      showLoading(false);
-      updateShare();
+      // Gäst ansluter som guest (om inte redan satt)
+      if(!data.players.guest){ await db.ref("games/"+id+"/players").update({ guest:nickname }); }
+      isHost = false; gameId = id;
+      initGameListeners(); showLoading(false); updateShare();
     })();
 
+    // Öppna spelet (gemensam)
     function openGame(){
       startDiv.classList.add("hidden");
       gameDiv.style.display="block";
-      resizeCanvas();
-      buildLetters();
-      initGameListeners();
-      updateShare();
+      resizeCanvas(); buildLetters(); initGameListeners(); updateShare();
     }
 
+    // Delningslänk
     function updateShare(){
       const link = linkFor(gameId);
       shareEl.innerHTML = `${t[lang].share}<a href="${link}" target="_blank" rel="noopener">${link}</a>`;
     }
 
+    // Tillbaka till start + radera spel (NYTT: bekräftelse)
     function backToStart(ask=true){
-      const confirmText = t[lang].confirmBack;
-      const proceed = ask ? confirm(confirmText) : true;
+      const proceed = ask ? confirm(t[lang].confirmBack) : true;
       if(!proceed) return;
-      if(gameId){
-        // Try delete game (host or guest – depending on rules this may or may not be allowed)
-        db.ref("games/"+gameId).remove().catch(()=>{ /* ignore */ });
-      }
+      if(gameId){ db.ref("games/"+gameId).remove().catch(()=>{}); }
       stopTimerLoop();
       gameId=""; isHost=false;
-      gameDiv.style.display="none";
-      startDiv.classList.remove("hidden");
-      chatList.innerHTML="";
-      lettersEl.innerHTML="";
-      wordEl.textContent="_";
-      scoreEl.textContent="🧑 0 | 👤 0";
-      turnEl.textContent="⏳";
-      timerBar.style.display="none";
+      gameDiv.style.display="none"; startDiv.classList.remove("hidden");
+      chatList.innerHTML=""; lettersEl.innerHTML=""; wordEl.textContent="_";
+      scoreEl.textContent="🧑 0 | 👤 0"; turnEl.textContent="⏳"; timerBar.style.display="none";
       joinArea.classList.add("hidden");
     }
     backBtn.onclick = ()=> backToStart(true);
 
-    // ---------- Game listeners ----------
+    /* =========================================================
+       GAME LISTENERS (GAMMALT + timer/tur-uppdateringar)
+    ========================================================== */
     function initGameListeners(){
       buildLetters();
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added", s=> appendChat(s.val()));
       db.ref("games/"+gameId).on("value", async snap=>{
         const d = snap.val() || {};
-        // de-dupe flood
+        // de-dupe
         const key = JSON.stringify([d.guesses,d.wrong,d.over,d.turn,d.scores,d.settings,d.roundStartMs,d.winner,d.players]);
         if(key===lastUpdateKey) return; lastUpdateKey=key;
 
@@ -558,17 +613,17 @@
         if(d.over || timerSeconds<=0){ stopTimerLoop(); timerBar.style.display = (timerSeconds>0 && !d.over)?"block":"none"; }
         else startTimerLoop();
 
-        // word, wrong, letters disabled
+        // ord, felantal, disabling av knappar
         showWord(d.word, d.guesses||[]);
         currentWrong = Number(d.wrong)||0; drawAll(currentWrong);
         const used = new Set(d.guesses||[]);
         lettersEl.querySelectorAll("button").forEach(b=>{ b.disabled = used.has(b.textContent); });
 
-        // score + turn
+        // poäng & tur
         scoreEl.textContent = `🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`;
         setTurn(d.turn);
 
-        // end-of-round controls
+        // runda slut
         if(d.over){
           restartBtn.classList.remove("hidden");
           newWordBtn.classList.remove("hidden");
@@ -581,12 +636,10 @@
       });
     }
 
-    function pushTemporaryInfo(text){
-      const info = {name:"System", text, ts:Date.now()};
-      appendChat(info);
-    }
+    // Systemmeddelande i chatten (GAMMALT)
+    function pushTemporaryInfo(text){ appendChat({name:"System", text, ts:Date.now()}); }
 
-    // Restart / New word
+    // Restart / Nytt ord (GAMMALT + timerreset)
     restartBtn.onclick = async ()=>{
       const s = await db.ref("games/"+gameId).get(); const d=s.val(); if(!d) return;
       await db.ref("games/"+gameId).update({ guesses:[], wrong:0, over:false, winner:null, roundStartMs: (timerSeconds>0? firebase.database.ServerValue.TIMESTAMP : 0) });
@@ -602,12 +655,8 @@
       });
     };
 
-    // ---------- Last: initial UI tweaks ----------
-    // If user opens without deep link, keep start visible; when entering game, showLoading(false).
-    if(!deepLinkGame){
-      startDiv.classList.remove("hidden");
-      gameDiv.style.display="none";
-    }
+    // Init: om ingen direktlänk, visa start (GAMMALT)
+    if(!deepLinkGame){ startDiv.classList.remove("hidden"); gameDiv.style.display="none"; }
   </script>
 </body>
 </html>
