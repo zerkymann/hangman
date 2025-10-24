@@ -228,6 +228,41 @@
     #nameModal p{margin:0 0 10px; color:var(--text-dim); font-size:.95rem}
     #nameModal input{width:100%}
     #nameModal .row{margin-top:10px}
+    /* ===========================================================
+   ✅ Desktop patch: bredare, luftigt, ingen ful scroll-mitt
+=========================================================== */
+@media (min-width: 960px){
+
+  /* Gör huvudspelkolumnen luftigare */
+  #gameMain {
+    max-width: 1100px;     /* från 900px → bredare 16:9-feel */
+    padding: 14px 0 26px;  /* mer rymd i överkant & underkant */
+    margin: 0 auto;
+    overflow-y: visible;   /* ✅ tar bort konstig scrollbar */
+  }
+
+  /* Canvas centrerad + bredare (Val A) */
+  #hangman {
+    max-width: 75%;        /* 🟣 70–75% av kortets bredd */
+    margin: 0 auto 20px;
+    display: block;
+  }
+
+  /* Letters & chat centrerade */
+  #letters,
+  #chatWrap {
+    max-width: 75%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Actions också centrerade fint */
+  #actions {
+    max-width: 75%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
   </style>
 </head>
 <body>
@@ -849,3 +884,4 @@ langSel.onchange = ()=>{ lang=langSel.value; localStorage.setItem("lang",lang); 
 </script>
 </body>
 </html>
+
