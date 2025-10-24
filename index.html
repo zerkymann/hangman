@@ -1,669 +1,90 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>HÄNGA GUBBE</title>
-
-  <!-- Fonts & Firebase -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-
-  <style>
-    /* ===========================================================
-       THEME & GLOBALS
-       =========================================================== */
-    :root{
-      --grad-a:#ec4899; --grad-b:#a855f7;
-      --bg1:#0e0e11; --bg2:#1a1a1f;
-      --panel:rgba(255,255,255,.08);
-      --text:#fff; --text-dim:#bdbdbd;
-      --ok:#22c55e; --bad:#ef4444;
-      --gap:10px;
-    }
-    *{box-sizing:border-box}
-    html, body { height:100%; }
-    body{
-      margin:0; font-family:"Poppins",sans-serif; color:var(--text);
-      background: radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
-      min-height:100dvh; display:grid; place-items:center; padding:10px;
-      overflow-x:hidden; /* ✅ Aldrig horisontell scroll */
-      -webkit-tap-highlight-color: transparent;
-    }
-    h1{
-      font-weight:700; text-align:center; margin:0;
-      font-size:clamp(1.25rem, 2.8vw, 1.75rem);
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-
-    /* ===========================================================
-       CARD CONTAINER
-       =========================================================== */
-    .card{
-      width:min(1100px, 98vw);
-      /* Viktig ändring för desktop: vi låser INTE en fast höjd,
-         utan låter kortet växa naturligt. På mobil vill vi ändå
-         fylla höjd för “app-känsla”. */
-      min-height:92dvh;
-      height:auto;
-      background:var(--panel);
-      border-radius:18px; backdrop-filter:blur(12px);
-      box-shadow:0 0 25px rgba(0,0,0,.6);
-      padding:12px; position:relative;
-      display:flex; flex-direction:column; gap:var(--gap);
-      overflow:visible; /* ✅ ingen intern scrollbar */
-    }
-    .hidden{display:none !important}
-
-    /* ===========================================================
-       FORMS & BUTTONS (Start)
-       =========================================================== */
-    .stack > *{display:block; width:100%; margin-top:12px}
-    .row{display:flex; gap:10px; align-items:center}
-    .row > *{flex:1}
-    label{font-size:.95rem; color:var(--text-dim)}
-    input,select,button{
-      font-family:inherit; font-size:1rem; border-radius:12px; border:1px solid #333; padding:.8rem 1rem;
-      background:#222; color:#fff; display:block; width:100%;
-    }
-    select{background:#1f1f24}
-    button{
-      cursor:pointer; font-weight:700; color:#111; border:none; background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 6px 18px rgba(168,85,247,.25); transition:transform .15s ease, box-shadow .15s ease;
-    }
-    button:hover{transform:translateY(-2px); box-shadow:0 8px 22px rgba(168,85,247,.35)}
-    .btn-ghost{background:transparent; color:var(--text); border:1px solid #3a3a3f; box-shadow:none}
-    .start-icons{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
-    .tag{font-size:.75rem; color:#111; background:rgba(255,255,255,.55); padding:.1rem .45rem; border-radius:999px; margin-left:.5rem}
-
-    /* ===========================================================
-       LOBBY BAR (Sticky)
-       =========================================================== */
-    #lobbyBar{
-      position:sticky; top:0; z-index:5;
-      background:linear-gradient(0deg, rgba(0,0,0,.0), rgba(0,0,0,.12));
-      border:1px solid #2b2b30; border-radius:12px;
-      padding:8px 10px; display:flex; gap:12px; justify-content:center; align-items:center;
-      backdrop-filter:blur(10px);
-    }
-    .lobbyItem{display:flex; align-items:center; gap:8px; font-size:.95rem; white-space:nowrap}
-    .dot{width:10px; height:10px; border-radius:999px; display:inline-block; animation:pulseDot 1.4s ease-in-out infinite}
-    .online{background:#22c55e}
-    .offline{background:#ef4444}
-    @keyframes pulseDot{0%{transform:scale(1);opacity:.9}50%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:.9}}
-    #lobbyMsg{font-size:.9rem; color:var(--text-dim)}
-
-    /* ===========================================================
-       LOADING
-       =========================================================== */
-    .loading{display:flex; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); padding:6px 0}
-    .spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* ===========================================================
-       GAME MAIN – vertikal scroll (bara om NÖDVÄNDIGT)
-       =========================================================== */
-    #gameMain{
-      /* Låt innehållet bestämma höjden på desktop.
-         På mobil får sektionen vara scroll-bar om innehåll kräver. */
-      display:flex; flex-direction:column; gap:12px;
-      padding:6px;
-      scroll-behavior:smooth;
-      width:100%;
-      margin:0 auto;
-    }
-    /* Spacing-guide botten på mobil (safe-area) */
-    @media (max-width: 600px){
-      #gameMain{ padding-bottom: calc(30px + env(safe-area-inset-bottom)); }
-    }
-    @media (max-width: 400px){
-      #gameMain{ padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
-    }
-
-    #share{font-size:.9rem; color:var(--text-dim); word-break:break-all; text-align:center}
-    #scoreboard{
-      margin-top:2px; font-weight:700; text-align:center; font-size:clamp(1rem,2.6vw,1.2rem);
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    #turnIndicator{margin-top:2px; text-align:center; font-weight:600; color:var(--text-dim); transition:opacity .25s, transform .25s}
-    .turn-flash{opacity:0; transform:translateY(-4px)}
-
-    /* ===========================================================
-       CANVAS + ORD
-       =========================================================== */
-    #hangman{
-      width:100%; aspect-ratio:200/250; background:#111; border:1px solid #333; border-radius:12px;
-      max-height:40dvh; min-height:220px;
-    }
-    .shake{animation:shake .3s ease}
-    @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
-
-    #word{
-      letter-spacing:.25em; font-size:clamp(1.05rem,4vw,1.6rem); text-align:center;
-      margin-top:12px; margin-bottom:20px;
-    }
-
-    /* ===========================================================
-       TIMER
-       =========================================================== */
-    #timerBar{
-      margin:10px 0 14px; width:100%; height:11px; border-radius:999px; background:rgba(255,255,255,.08);
-      overflow:hidden; display:none
-    }
-    #timerFill{height:100%; width:0%; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s linear, filter .2s linear}
-    .pulse{animation:pulse 0.8s ease-in-out infinite}
-    @keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
-
-    /* ===========================================================
-       LETTERS – smalare & responsiva
-       =========================================================== */
-    #letters{ display:grid; gap:10px; margin-top:16px; margin-bottom:28px; }
-    #letters{ grid-template-columns:repeat(12, 1fr); }
-    #letters button{
-      padding:.45rem .2rem; border-radius:10px; color:#111; font-weight:800; border:none;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 6px 18px rgba(168,85,247,.25);
-      font-size:.95rem; transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
-    }
-    #letters button:disabled{opacity:.35; filter:saturate(.7); cursor:default}
-
-    /* Hover glow – bara på desktop/laptop */
-    @media (hover:hover) and (pointer:fine){
-      #letters button:hover:not(:disabled){
-        box-shadow:0 0 12px rgba(236,72,153,.7), 0 0 18px rgba(168,85,247,.6);
-        transform:translateY(-3px) scale(1.04);
-      }
-    }
-
-    /* Tablet & Mobil */
-    @media (max-width: 959px){
-      #letters{ grid-template-columns:repeat(8, 1fr); }
-      #letters button{ font-size:clamp(.9rem, 3.4vw, 1.05rem); padding:.5rem .16rem; }
-    }
-    @media (max-width: 600px){
-      #letters{ grid-template-columns:repeat(7, 1fr); gap:9px; }
-      #hangman{ max-height:38dvh; }
-    }
-    @media (max-width: 420px){
-      #letters{ grid-template-columns:repeat(6, 1fr); gap:8px; }
-    }
-
-    /* ===========================================================
-       CHAT
-       =========================================================== */
-    #chatWrap{border:1px solid #2b2b30; border-radius:12px; background:rgba(255,255,255,.05); padding:10px; display:flex; flex-direction:column; gap:8px; min-height:120px}
-    #chatList{flex:1; min-height:72px; max-height:24dvh; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:6px}
-    .chatMsg{background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px 8px; font-size:.95rem; line-height:1.25; opacity:1; transition:opacity .6s ease}
-    .chatMsg.fadeout{opacity:0}
-    .chatMeta{font-size:.75rem; color:var(--text-dim); margin-top:2px}
-    #chatRow{display:flex; gap:8px}
-    #chatText{background:#222; color:#fff; border:1px solid #333; border-radius:10px; padding:.6rem .9rem; flex:1}
-    #chatSend{min-width:110px}
-    #chatRow button{width:auto; flex:0 0 auto;} /* förhindra bredd som skapar hor-scroll */
-
-    /* ===========================================================
-       ACTIONS
-       =========================================================== */
-    #actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
-    .action{padding:.7rem 1rem; border-radius:12px; border:none; font-weight:700; cursor:pointer;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); color:#111; box-shadow:0 6px 18px rgba(168,85,247,.25)}
-    .action.btn-ghost{background:transparent; color:var(--text); border:1px solid #3a3a3f; box-shadow:none}
-
-    /* ===========================================================
-       DESKTOP PATCH: bredare layout, ingen intern scrollbar
-       =========================================================== */
-    @media (min-width: 960px){
-      /* Gör huvudlayouten luftig, och låt inte #gameMain scrolla internt */
-      #gameMain{
-        max-width: 1100px;
-        padding: 14px 0 26px;
-        margin: 0 auto;
-        overflow:visible; /* ✅ tar bort den smala scrollen i mitten */
-      }
-      /* Canvas/letters/chat/actions centreras och tar ~75% av kortets bredd */
-      #hangman,
-      #letters,
-      #chatWrap,
-      #actions{
-        max-width: 75%;
-        margin-left:auto; margin-right:auto;
-      }
-      #hangman{ display:block; }
-    }
-
-    /* ===========================================================
-       NICKNAME MODAL
-       =========================================================== */
-    #nameModal{
-      position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:9999;
-      padding:16px;
-    }
-    #nameModal .modal{
-      width:min(440px, 92vw); background:rgba(20,20,24,.97); border:1px solid #333; border-radius:14px; padding:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,.6);
-    }
-    #nameModal h2{margin:0 0 8px; font-size:1.1rem}
-    #nameModal p{margin:0 0 10px; color:var(--text-dim); font-size:.95rem}
-    #nameModal input{width:100%}
-    #nameModal .row{margin-top:10px}
-  </style>
-</head>
-
-<body>
-
-  <!-- ====================== START-SKÄRM ====================== -->
-  <div id="start" class="card">
+<!DOCTYPE html><html lang="sv"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/><title>HÄNGA GUBBE</title><meta name="theme-color" content="#0e0e11"><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"><script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script><style>
+:root{--grad-a:#ec4899;--grad-b:#a855f7;--bg1:#0e0e11;--bg2:#1a1a1f;--panel:rgba(255,255,255,.08);--text:#fff;--text-dim:#bdbdbd;--gap:10px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:"Poppins",sans-serif;color:var(--text);background:radial-gradient(circle at 20% 20%,#18181d,#0e0e11 70%),linear-gradient(160deg,var(--bg1),var(--bg2));min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:10px;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+h1{font-weight:700;text-align:center;margin:0;font-size:clamp(1.25rem,2.6vw,1.6rem);background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.card{width:min(980px,98vw);min-height:92dvh;background:var(--panel);border-radius:18px;backdrop-filter:blur(12px);box-shadow:0 0 25px rgba(0,0,0,.6);padding:12px;display:flex;flex-direction:column;gap:var(--gap);overflow:visible}
+.hidden{display:none!important}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+input,select,button{font-family:inherit;font-size:1rem;border-radius:12px;border:1px solid #333;padding:.8rem 1rem;background:#222;color:#fff;width:100%}select{background:#1f1f24}
+button{cursor:pointer;font-weight:700;color:#111;border:none;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));box-shadow:0 6px 18px rgba(168,85,247,.25);transition:all .15s}button:hover{transform:translateY(-2px)}
+#lobbyBar{position:sticky;top:0;z-index:10;background:rgba(0,0,0,.12);border:1px solid #2b2b30;border-radius:12px;padding:6px;display:flex;gap:12px;justify-content:center;align-items:center}
+.lobbyItem{display:flex;align-items:center;gap:8px}#lobbyMsg{color:var(--text-dim);font-size:.9rem}.dot{width:10px;height:10px;border-radius:999px;display:inline-block}.online{background:#22c55e}.offline{background:#ef4444}
+#gameMain{flex:1;display:flex;flex-direction:column;gap:12px;padding:6px}
+#share{text-align:center;font-size:.9rem;color:var(--text-dim);margin:6px 0 10px;word-break:break-all}
+#scoreboard{text-align:center;font-weight:700;font-size:1.1rem;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#turnIndicator{text-align:center;font-weight:600;color:var(--text-dim)}
+#hangman{width:100%;background:#111;border:1px solid #333;border-radius:12px;max-height:40dvh;min-height:220px}
+#word{text-align:center;letter-spacing:.25em;font-size:1.3rem;margin-top:10px}
+#timerBar{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;display:none}#timerFill{height:100%;width:0;background:linear-gradient(90deg,var(--grad-a),var(--grad-b));transition:width .2s,filter .2s}.pulse{animation:pulse .8s ease-in-out infinite}@keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
+#letters{display:grid;gap:10px;margin:16px 0}#letters{grid-template-columns:repeat(12,1fr)}#letters button{font-weight:800}
+@media (hover:hover) and (pointer:fine){#letters button:hover:not(:disabled){box-shadow:0 0 12px rgba(236,72,153,.7),0 0 18px rgba(168,85,247,.6);transform:translateY(-3px) scale(1.04)}}
+#letters button:disabled{opacity:.35;filter:saturate(.7);cursor:default}
+@media (max-width:959px){#letters{grid-template-columns:repeat(8,1fr)}}
+@media (max-width:600px){#letters{grid-template-columns:repeat(7,1fr);margin-bottom:40px}#chatWrap{margin-top:18px}#hangman{max-height:38dvh}}
+@media (max-width:420px){#letters{grid-template-columns:repeat(6,1fr)}}
+@media (min-width:960px){.card{padding-top:10px}#gameMain,#hangman,#letters,#chatWrap,#actions{max-width:900px;margin:auto}#hangman{max-height:calc(70vh - 180px)}}
+#chatWrap{border:1px solid #2b2b30;border-radius:12px;background:rgba(255,255,255,.05);padding:10px;display:flex;flex-direction:column;gap:8px}
+#chatList{flex:1;max-height:24dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.chatMsg{background:rgba(255,255,255,.06);border:1px solid #35353a;border-radius:10px;padding:6px;font-size:.95rem}
+.chatMeta{font-size:.75rem;color:var(--text-dim);margin-top:2px}.fadeout{opacity:0;transition:opacity .6s}
+#actions{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+</style></head><body>
+<div id="start" class="card"><h1>HÄNGA GUBBE</h1><div><label for="lang">Språk / Language</label><select id="lang"><option value="sv">Svenska</option><option value="en">English</option></select></div><div><label for="playerName" id="nameLabel">Ditt namn</label><input id="playerName" maxlength="24"/></div><div class="row"><button id="createBtn">🆕 Skapa spel</button><button id="joinBtn">🔗 Gå med i spel</button></div><div id="joinArea" class="row hidden"><input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10"/><button id="joinGo">Gå med</button></div></div>
+<div id="game" class="card hidden">
+  <div id="lobbyBar">
+    <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span></div>
+    <div class="lobbyItem"><span id="dotGuest" class="dot offline"></span>👤 <span id="nameGuest">⏳ Väntar…</span></div>
+    <div id="lobbyMsg" class="lobbyItem">—</div>
+  </div>
+  <div id="gameMain">
     <h1>HÄNGA GUBBE</h1>
-
-    <div class="stack">
-      <div>
-        <label for="lang">Språk / Language</label>
-        <select id="lang">
-          <option value="sv">Svenska</option>
-          <option value="en">English</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="playerName" id="nameLabel">Ditt namn</label>
-        <input id="playerName" placeholder="Ditt namn / Your name" maxlength="24"/>
-      </div>
-
-      <div class="start-icons">
-        <button id="createBtn">🆕 Skapa spel</button>
-        <button id="joinBtn">🔗 Gå med i spel</button>
-      </div>
-
-      <div id="joinArea" class="row hidden">
-        <input id="joinCode" placeholder="Spelkod (t.ex. ab123)" maxlength="10"/>
-        <button id="joinGo">Gå med</button>
+    <div id="share"></div>
+    <div id="scoreboard">🧑 0 | 👤 0</div>
+    <div id="turnIndicator">⏳ Väntar på tur…</div>
+    <canvas id="hangman"></canvas>
+    <div id="word">_</div>
+    <div class="row" id="timerControlsRow" style="justify-content:center;flex-wrap:wrap">
+      <button id="timerOpen" class="hidden" style="max-width:220px">⏱ Ställ in timer</button>
+      <div id="timerConfig" class="row hidden" style="max-width:520px;width:100%">
+        <input id="timerInput" type="number" min="0" max="100" value="0"/>
+        <button id="timerConfirm">✅</button><button id="timerCancel">✖</button><button id="timerOff">🕒 Av</button>
       </div>
     </div>
+    <div id="timerBar"><div id="timerFill"></div></div>
+    <div id="letters"></div>
+    <div id="chatWrap"><div id="chatList"></div><div class="row"><input id="chatText" placeholder="Skriv ett meddelande..." maxlength="200"/><button id="chatSend">Skicka</button></div></div>
+    <div id="actions"><button id="restartBtn" class="hidden">🔁 Spela igen</button><button id="newWordBtn" class="hidden">✍️ Välj nytt ord</button><button id="backBtn">⬅️ Tillbaka</button></div>
   </div>
-
-
-  <!-- ====================== SPEL ====================== -->
-  <div id="game" class="card hidden">
-
-    <!-- Sticky lobby -->
-    <div id="lobbyBar">
-      <div class="lobbyItem">
-        <span id="dotHost" class="dot offline"></span>
-        👑 <span id="nameHost">—</span>
-      </div>
-
-      <div class="lobbyItem">
-        <span id="dotGuest" class="dot offline"></span>
-        👤 <span id="nameGuest">⏳ Väntar på spelare…</span>
-      </div>
-
-      <div id="lobbyMsg" class="lobbyItem" style="color:var(--text-dim)">—</div>
-    </div>
-
-    <div id="gameMain">
-
-      <h1>HÄNGA GUBBE</h1>
-
-      <div id="loading" class="loading hidden">
-        <div class="spinner"></div>
-        <div id="loadingText">Laddar spel…</div>
-      </div>
-
-      <div id="share"></div>
-      <div id="scoreboard">🧑 0 | 👤 0</div>
-      <div id="turnIndicator">⏳ Väntar på tur…</div>
-
-      <canvas id="hangman"></canvas>
-      <div id="word">_</div>
-
-      <div class="row" id="timerControlsRow" style="justify-content:center; flex-wrap:wrap">
-        <button id="timerOpen" class="action hidden" style="max-width:220px">⏱ Ställ in timer</button>
-        <div id="timerConfig" class="row hidden" style="max-width:520px; width:100%;">
-          <input id="timerInput" type="number" min="0" max="100" value="0"/>
-          <button id="timerConfirm" class="action">✅</button>
-          <button id="timerCancel" class="action btn-ghost">✖</button>
-          <button id="timerOff" class="action btn-ghost">🕒 Av</button>
-        </div>
-      </div>
-
-      <div id="timerBar"><div id="timerFill"></div></div>
-
-      <div id="letters"></div>
-
-      <div id="chatWrap">
-        <div id="chatList"></div>
-        <div id="chatRow">
-          <input id="chatText" placeholder="Skriv ett meddelande..." maxlength="200"/>
-          <button id="chatSend">Skicka</button>
-        </div>
-      </div>
-
-      <div id="actions">
-        <button id="restartBtn" class="action hidden">🔁 Spela igen</button>
-        <button id="newWordBtn" class="action hidden">✍️ Välj nytt ord</button>
-        <button id="backBtn" class="action">⬅️ Tillbaka till start</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Nickname-modal -->
-  <div id="nameModal">
-    <div class="modal">
-      <h2 id="nameModalTitle">Välj ett namn</h2>
-      <p id="nameModalDesc">Du måste ange ett namn för att gå vidare.</p>
-      <input id="nameModalInput" maxlength="24"/>
-      <div class="row">
-        <button id="nameModalConfirm">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    /* ===================== Firebase ===================== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
-      authDomain: "hangman-6a99e.firebaseapp.com",
-      databaseURL: "https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "hangman-6a99e",
-      storageBucket: "hangman-6a99e.firebasestorage.app",
-      messagingSenderId: "992689481911",
-      appId: "1:992689481911:web:6461e931ba4d96879ec532"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    /* ===================== DOM refs ===================== */
-    const startDiv  = document.getElementById("start");
-    const gameDiv   = document.getElementById("game");
-    const gameMain  = document.getElementById("gameMain");
-    const langSel   = document.getElementById("lang");
-    const nameInput = document.getElementById("playerName");
-    const nameLabel = document.getElementById("nameLabel");
-    const createBtn = document.getElementById("createBtn");
-    const joinBtn   = document.getElementById("joinBtn");
-    const joinArea  = document.getElementById("joinArea");
-    const joinCodeInput = document.getElementById("joinCode");
-    const joinGo    = document.getElementById("joinGo");
-    const nameHost  = document.getElementById("nameHost");
-    const nameGuest = document.getElementById("nameGuest");
-    const dotHost   = document.getElementById("dotHost");
-    const dotGuest  = document.getElementById("dotGuest");
-    const lobbyMsg  = document.getElementById("lobbyMsg");
-    const loading   = document.getElementById("loading");
-    const loadingText = document.getElementById("loadingText");
-    const shareEl   = document.getElementById("share");
-    const scoreEl   = document.getElementById("scoreboard");
-    const turnEl    = document.getElementById("turnIndicator");
-    const canvas    = document.getElementById("hangman");
-    const ctx       = canvas.getContext("2d");
-    const wordEl    = document.getElementById("word");
-    const lettersEl = document.getElementById("letters");
-    const chatList  = document.getElementById("chatList");
-    const chatText  = document.getElementById("chatText");
-    const chatSend  = document.getElementById("chatSend");
-    const timerOpen = document.getElementById("timerOpen");
-    const timerConfig = document.getElementById("timerConfig");
-    const timerInput = document.getElementById("timerInput");
-    const timerConfirm = document.getElementById("timerConfirm");
-    const timerCancel  = document.getElementById("timerCancel");
-    const timerOff     = document.getElementById("timerOff");
-    const timerBar     = document.getElementById("timerBar");
-    const timerFill    = document.getElementById("timerFill");
-    const restartBtn = document.getElementById("restartBtn");
-    const newWordBtn = document.getElementById("newWordBtn");
-    const backBtn    = document.getElementById("backBtn");
-    const nameModal = document.getElementById("nameModal");
-    const nameModalInput = document.getElementById("nameModalInput");
-    const nameModalConfirm = document.getElementById("nameModalConfirm");
-    const params = new URLSearchParams(location.search);
-    const deepLinkGame = params.get("game"); // ✅ only once
-
-    /* ===================== State ===================== */
-    const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
-    let gameId = "";
-    let isHost = false;
-    let nickname = "";
-    let lang = localStorage.getItem("lang") || "sv";
-    let timerSeconds = 0;
-    let roundStartMs = 0;
-    let rafTimer = null;
-    let currentWrong = 0;
-    let lastUpdateKey = "";
-
-    /* ===================== i18n ===================== */
-    const T = {
-      sv:{name:"Ditt namn", enterWord:"Ange ett ord att spela med:", notFound:"Spelet hittades inte.", notYourTurn:"Inte din tur!", share:"Dela denna länk:", loading:"Laddar spel…", yourTurn:"🎯 Din tur!", oppTurn:"⏳ Motståndarens tur…", timeRanOut:"⏰ Tiden tog slut!", hostWon:"🎉 Värden vann!", guestWon:"🎉 Gästen vann!", joinCodeMissing:"Ange spelkod.", confirmBack:"Är du säker på att du vill lämna och radera spelet?", waiting:"⏳ Väntar på spelare…", bothIn:"🎮 Båda spelare anslutna!", modalTitle:"Välj ett namn", modalDesc:"Du måste ange ett namn för att gå vidare.", modalPlaceholder:"Ditt namn"},
-      en:{name:"Your name", enterWord:"Enter a word to start:", notFound:"Game not found.", notYourTurn:"Not your turn!", share:"Share this link:", loading:"Loading game…", yourTurn:"🎯 Your turn!", oppTurn:"⏳ Opponent's turn…", timeRanOut:"⏰ Time ran out!", hostWon:"🎉 Host won!", guestWon:"🎉 Guest won!", joinCodeMissing:"Enter a game code.", confirmBack:"Are you sure you want to leave and delete the game?", waiting:"⏳ Waiting for player…", bothIn:"🎮 Both players connected!", modalTitle:"Choose a name", modalDesc:"You must enter a name to continue.", modalPlaceholder:"Your name"}
-    };
-    langSel.value = lang; applyLang();
-    langSel.onchange = ()=>{ lang=langSel.value; localStorage.setItem("lang",lang); applyLang(); };
-    function applyLang(){
-      nameLabel.textContent=T[lang].name;
-      loadingText.textContent=T[lang].loading;
-      chatText.placeholder=(lang==="sv")?"Skriv ett meddelande...":"Type a message...";
-      document.getElementById("nameModalTitle").textContent=T[lang].modalTitle;
-      document.getElementById("nameModalDesc").textContent=T[lang].modalDesc;
-      nameModalInput.placeholder=T[lang].modalPlaceholder;
-    }
-
-    /* ===================== Utils ===================== */
-    const escapeH = s => (s||"").replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]) );
-    const showLoading = b => loading.classList.toggle("hidden", !b);
-    const shareLink = () => location.origin+location.pathname+"?game="+gameId;
-
-    function requireNickname(){
-      let stored=(nameInput.value||localStorage.getItem("nickname")||"").trim();
-      if(stored){ nameInput.value=stored; localStorage.setItem("nickname", stored); return Promise.resolve(stored); }
-      return new Promise(resolve=>{
-        nameModal.style.display="flex";
-        nameModalInput.value="";
-        setTimeout(()=>nameModalInput.focus(), 40);
-        function done(){
-          let v=(nameModalInput.value||"").trim(); if(!v) return;
-          nameModal.style.display="none";
-          nameInput.value=v; localStorage.setItem("nickname", v);
-          resolve(v);
-        }
-        nameModalConfirm.onclick=done;
-        nameModalInput.onkeydown=e=>{ if(e.key==="Enter") done(); };
-      });
-    }
-
-    /* ===================== Presence ===================== */
-    function updateLobby(players={}, presence={}){
-      nameHost.textContent=players.host||"—";
-      nameGuest.textContent=players.guest||T[lang].waiting;
-      const hostOn=!!presence.host, guestOn=!!presence.guest;
-      dotHost.classList.toggle("online",hostOn); dotHost.classList.toggle("offline",!hostOn);
-      dotGuest.classList.toggle("online",guestOn); dotGuest.classList.toggle("offline",!guestOn);
-      lobbyMsg.textContent=(players.host&&players.guest)?T[lang].bothIn:T[lang].waiting;
-    }
-    function setupPresence(role){
-      firebase.database().ref(".info/connected").on("value", s=>{
-        if(s.val()){
-          const r=db.ref(`games/${gameId}/presence/${role}`);
-          r.set(true); r.onDisconnect().remove();
-        }
-      });
-    }
-
-    /* ===================== Canvas ===================== */
-    function resizeCanvas(){
-      const w = Math.min(800, Math.floor(gameMain.clientWidth*0.75)); /* desktop 75% känsla */
-      const h = Math.floor(w*1.25);
-      canvas.width=w; canvas.height=h; drawAll(currentWrong);
-      canvas.style.maxWidth = "100%"; canvas.style.height = "auto";
-    }
-    window.addEventListener("resize", ()=>setTimeout(resizeCanvas,60));
-    const grad = ()=>{ const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height); g.addColorStop(0,"#ec4899"); g.addColorStop(.5,"#a855f7"); g.addColorStop(1,"#ec4899"); return g; };
-    function drawAll(wrong){
-      const cw=canvas.width,ch=canvas.height; const sX=cw/200,sY=ch/250; const lw=2*Math.min(sX,sY);
-      ctx.clearRect(0,0,cw,ch); ctx.lineWidth=lw; ctx.strokeStyle=grad();
-      ctx.beginPath(); ctx.moveTo(10*sX,240*sY); ctx.lineTo(190*sX,240*sY);
-      ctx.moveTo(50*sX,240*sY); ctx.lineTo(50*sX,20*sY); ctx.lineTo(130*sX,20*sY); ctx.lineTo(130*sX,50*sY); ctx.stroke();
-      if(wrong>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke();}
-      if(wrong>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke();}
-      if(wrong>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke();}
-      if(wrong>3){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke();}
-      if(wrong>4){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke();}
-      if(wrong>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
-    }
-
-    /* ===================== Letters & Word ===================== */
-    function setWordDisplay(word, guesses){ wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" "); }
-    function buildLetters(){
-      lettersEl.innerHTML="";
-      letters.forEach(ch=>{
-        const b=document.createElement("button"); b.textContent=ch;
-        b.onclick=async()=>{
-          const snap=await db.ref("games/"+gameId).get(); const d=snap.val();
-          if(!d||d.over) return;
-          const mine=isHost?"host":"guest";
-          if(d.turn!==mine) return alert((lang==="sv")?"Inte din tur!":"Not your turn!");
-          if((d.guesses||[]).includes(ch)) return;
-          let newGuesses=[...(d.guesses||[]), ch];
-          let newWrong=d.wrong||0; let over=false; let winner=null;
-          const scores={...(d.scores||{host:0,guest:0})};
-          const isWrong=!d.word.includes(ch);
-          if(isWrong){ newWrong++; canvas.classList.add("shake"); setTimeout(()=>canvas.classList.remove("shake"),300); }
-          const solved=d.word.split("").every(l=>newGuesses.includes(l));
-          if(solved){ over=true; winner=mine; scores[mine]++; }
-          else if(newWrong>=6){ over=true; const opp=mine==="host"?"guest":"host"; winner=opp; scores[opp]++; }
-          await db.ref("games/"+gameId).update({guesses:newGuesses, wrong:newWrong, over, scores, winner, roundStartMs: firebase.database.ServerValue.TIMESTAMP});
-        };
-        lettersEl.appendChild(b);
-      });
-    }
-
-    /* ===================== Timer ===================== */
-    function timerLoop(){
-      stopTimerLoop();
-      if(timerSeconds<=0||!roundStartMs){ timerBar.style.display="none"; return; }
-      timerBar.style.display="block";
-      const tick=async()=>{
-        const now=Date.now();
-        const remainMs=Math.max(0,(timerSeconds*1000)-Math.max(0,now-roundStartMs));
-        const pct=Math.max(0,Math.min(1,remainMs/(timerSeconds*1000)));
-        timerFill.style.width=(pct*100)+"%";
-        timerFill.classList.toggle("pulse", remainMs<=3000);
-        if(remainMs<=0){
-          const snap=await db.ref("games/"+gameId).get(); const d=snap.val();
-          if(d && !d.over){
-            const opp=d.turn==="host"?"guest":"host"; const scores={...(d.scores||{})}; scores[opp]=(scores[opp]||0)+1;
-            await db.ref("games/"+gameId).update({over:true,scores,winner:opp});
-            systemMessage((lang==="sv")?"⏰ Tiden tog slut!":"⏰ Time ran out!");
-          }
-          timerBar.style.display="none"; return;
-        }
-        rafTimer=requestAnimationFrame(tick);
-      };
-      rafTimer=requestAnimationFrame(tick);
-    }
-    function stopTimerLoop(){ if(rafTimer) cancelAnimationFrame(rafTimer); rafTimer=null; }
-
-    /* ===================== Chat ===================== */
-    function pushChat(msg){ db.ref("games/"+gameId+"/chat").push({name:nickname,text:msg,ts:Date.now()}); }
-    chatSend.onclick=()=>{ const v=chatText.value.trim(); if(!v) return; chatText.value=""; pushChat(v); };
-    chatText.onkeydown=e=>{ if(e.key==="Enter") chatSend.click(); };
-    function addChat(o){
-      const wrap=document.createElement("div"); wrap.className="chatMsg";
-      wrap.innerHTML=`<div><b>${escapeH(o.name||"??")}</b>: ${escapeH(o.text||"")}</div><div class="chatMeta">${new Date(o.ts||Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
-      chatList.appendChild(wrap); chatList.scrollTop=chatList.scrollHeight; setTimeout(()=>wrap.classList.add("fadeout"),15000); setTimeout(()=>wrap.remove(),16500);
-    }
-    const systemMessage = txt => addChat({name:"System", text:txt, ts:Date.now()});
-
-    /* ===================== Turn UI ===================== */
-    function setTurn(turn){
-      const mine=isHost?"host":"guest";
-      turnEl.textContent=(turn===mine)?((lang==="sv")?"🎯 Din tur!":"🎯 Your turn!"):((lang==="sv")?"⏳ Motståndarens tur…":"⏳ Opponent's turn…");
-      turnEl.classList.add("turn-flash"); setTimeout(()=>turnEl.classList.remove("turn-flash"),50);
-    }
-
-    /* ===================== Navigation ===================== */
-    function showGame(){
-      startDiv.classList.add("hidden"); gameDiv.classList.remove("hidden");
-      resizeCanvas(); buildLetters();
-    }
-    backBtn.onclick=()=>{
-      if(!confirm(T[lang].confirmBack)) return;
-      if(gameId) db.ref("games/"+gameId).remove();
-      location.href=location.pathname;
-    };
-
-    /* ===================== Start Host / Join / Deep link ===================== */
-    createBtn.onclick=async()=>{
-      nickname=(nameInput.value||"").trim(); if(!nickname) nickname=await requireNickname();
-      const word=(prompt(T[lang].enterWord)||"").toUpperCase(); if(!/^[A-ZÅÄÖ]+$/.test(word)) return alert("Endast bokstäver A–Ö!");
-      const id="hangman-"+Math.random().toString(36).substr(2,5);
-      await db.ref("games/"+id).set({ word, guesses:[], wrong:0, turn:"guest", over:false, players:{host:nickname}, scores:{host:0,guest:0}, settings:{timerSeconds:0}, presence:{}, roundStartMs:0 });
-      isHost=true; gameId=id; showGame(); setupPresence("host");
-    };
-    joinBtn.onclick=()=> joinArea.classList.remove("hidden");
-    joinGo.onclick=async()=>{
-      const code=(joinCodeInput.value||"").trim(); if(!code) return alert(T[lang].joinCodeMissing);
-      nickname=(nameInput.value||"").trim(); if(!nickname) nickname=await requireNickname();
-      const id="hangman-"+code; showLoading(true);
-      const snap=await db.ref("games/"+id).get(); if(!snap.exists()){ showLoading(false); return alert(T[lang].notFound); }
-      await db.ref("games/"+id+"/players").update({guest:nickname});
-      isHost=false; gameId=id; showGame(); setupPresence("guest"); showLoading(false);
-    };
-
-    (async function directJoin(){
-      if(!deepLinkGame) return;
-      showGame(); nickname=(nameInput.value||"").trim(); if(!nickname) nickname=await requireNickname();
-      showLoading(true);
-      const snap=await db.ref("games/"+deepLinkGame).get();
-      if(!snap.exists()){ showLoading(false); return backBtn.click(); }
-      const d=snap.val(); if(!d.players?.guest){ await db.ref("games/"+deepLinkGame+"/players").update({guest:nickname}); }
-      isHost=false; gameId=deepLinkGame; setupPresence("guest"); showLoading(false);
-    })();
-
-    /* ===================== Game listeners ===================== */
-    function listenGame(){
-      db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added", s=> addChat(s.val()));
-      db.ref("games/"+gameId).on("value", snap=>{
-        const d=snap.val(); if(!d) return;
-        updateLobby(d.players||{}, d.presence||{});
-
-        const key=JSON.stringify([d.guesses,d.wrong,d.over,d.turn,d.scores,d.settings,d.roundStartMs,d.winner]);
-        if(key===lastUpdateKey) return; lastUpdateKey=key;
-
-        timerSeconds=d.settings?.timerSeconds||0; roundStartMs=d.roundStartMs||0;
-        if(d.over||timerSeconds<=0){ stopTimerLoop(); timerBar.style.display=(timerSeconds>0 && !d.over)?"block":"none"; }
-        else timerLoop();
-
-        setWordDisplay(d.word, d.guesses||[]); currentWrong=d.wrong||0; drawAll(currentWrong);
-        const used=new Set(d.guesses||[]); lettersEl.querySelectorAll("button").forEach(b=>{ b.disabled=used.has(b.textContent); });
-        scoreEl.textContent=`🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`; setTurn(d.turn);
-
-        if(d.over){ restartBtn.classList.remove("hidden"); newWordBtn.classList.remove("hidden"); systemMessage((d.winner==="host")?(lang==="sv"?"🎉 Värden vann!":"🎉 Host won!"):(lang==="sv"?"🎉 Gästen vann!":"🎉 Guest won!")); }
-        else { restartBtn.classList.add("hidden"); newWordBtn.classList.add("hidden"); }
-
-        const link=shareLink(); shareEl.innerHTML=`${T[lang].share} <a href="${link}" target="_blank">${link}</a>`;
-      });
-    }
-
-    /* ===================== Restart / New word ===================== */
-    restartBtn.onclick=async()=>{
-      const s=await db.ref("games/"+gameId).get(); const d=s.val(); if(!d) return;
-      await db.ref("games/"+gameId).update({guesses:[], wrong:0, over:false, winner:null, roundStartMs:(timerSeconds>0?Date.now():0)});
-    };
-    newWordBtn.onclick=async()=>{
-      const s=await db.ref("games/"+gameId).get(); const d=s.val(); if(!d.over) return alert((lang==="sv")?"Rundan är inte slut än.":"Round not over.");
-      const nw=(prompt(T[lang].enterWord)||"").toUpperCase(); if(!/^[A-ZÅÄÖ]+$/.test(nw)) return;
-      const nextTurn=d.turn==="host"?"guest":"host";
-      await db.ref("games/"+gameId).update({word:nw, guesses:[], wrong:0, over:false, winner:null, turn:nextTurn, roundStartMs:(timerSeconds>0?Date.now():0)});
-    };
-
-    /* ===================== Init ===================== */
-    window.addEventListener("load", ()=>setTimeout(()=>{
-      if(!deepLinkGame){ startDiv.classList.remove("hidden"); gameDiv.classList.add("hidden"); }
-      listenGame(); resizeCanvas();
-    }, 80));
-  </script>
-</body>
-</html>
+</div>
+<div id="nameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px"><div style="width:min(440px,92vw);background:rgba(20,20,24,.97);border:1px solid #333;border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6)"><h2 id="nameModalTitle" style="margin:0 0 8px;font-size:1.1rem">Välj ett namn</h2><p id="nameModalDesc" style="margin:0 0 10px;color:#bdbdbd;font-size:.95rem">Du måste ange ett namn för att gå vidare.</p><input id="nameModalInput" maxlength="24" style="width:100%;font-family:inherit;font-size:1rem;border-radius:12px;border:1px solid #333;padding:.8rem 1rem;background:#222;color:#fff"/><div class="row" style="margin-top:10px"><button id="nameModalConfirm">OK</button></div></div></div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",authDomain:"hangman-6a99e.firebaseapp.com",databaseURL:"https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",projectId:"hangman-6a99e",storageBucket:"hangman-6a99e.firebasestorage.app",messagingSenderId:"992689481911",appId:"1:992689481911:web:6461e931ba4d96879ec532"};firebase.initializeApp(firebaseConfig);const db=firebase.database();
+const startDiv=document.getElementById("start"),gameDiv=document.getElementById("game"),gameMain=document.getElementById("gameMain"),langSel=document.getElementById("lang"),nameInput=document.getElementById("playerName"),nameLabel=document.getElementById("nameLabel"),createBtn=document.getElementById("createBtn"),joinBtn=document.getElementById("joinBtn"),joinArea=document.getElementById("joinArea"),joinCodeInput=document.getElementById("joinCode"),joinGo=document.getElementById("joinGo"),nameHost=document.getElementById("nameHost"),nameGuest=document.getElementById("nameGuest"),dotHost=document.getElementById("dotHost"),dotGuest=document.getElementById("dotGuest"),lobbyMsg=document.getElementById("lobbyMsg"),shareEl=document.getElementById("share"),scoreEl=document.getElementById("scoreboard"),turnEl=document.getElementById("turnIndicator"),canvas=document.getElementById("hangman"),ctx=canvas.getContext("2d"),wordEl=document.getElementById("word"),lettersEl=document.getElementById("letters"),chatList=document.getElementById("chatList"),chatText=document.getElementById("chatText"),chatSend=document.getElementById("chatSend"),timerOpen=document.getElementById("timerOpen"),timerConfig=document.getElementById("timerConfig"),timerInput=document.getElementById("timerInput"),timerConfirm=document.getElementById("timerConfirm"),timerCancel=document.getElementById("timerCancel"),timerOff=document.getElementById("timerOff"),timerBar=document.getElementById("timerBar"),timerFill=document.getElementById("timerFill"),restartBtn=document.getElementById("restartBtn"),newWordBtn=document.getElementById("newWordBtn"),backBtn=document.getElementById("backBtn"),nameModal=document.getElementById("nameModal"),nameModalInput=document.getElementById("nameModalInput"),nameModalConfirm=document.getElementById("nameModalConfirm");
+const params=new URLSearchParams(location.search),deepLinkGame=params.get("game");const letters=[..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];let gameId="",isHost=!1,nickname="",lang=localStorage.getItem("lang")||"sv",timerSeconds=0,roundStartMs=0,rafTimer=null,currentWrong=0,lastUpdateKey="";
+const T={sv:{name:"Ditt namn",enterWord:"Ange ett ord att spela med:",notFound:"Spelet hittades inte.",notYourTurn:"Inte din tur!",share:"Dela denna länk:",loading:"Laddar spel…",yourTurn:"🎯 Din tur!",oppTurn:"⏳ Motståndarens tur…",timeRanOut:"⏰ Tiden tog slut!",hostWon:"🎉 Värden vann!",guestWon:"🎉 Gästen vann!",joinCodeMissing:"Ange spelkod.",confirmBack:"Är du säker på att du vill lämna och radera spelet?",waiting:"⏳ Väntar på spelare…",bothIn:"🎮 Båda spelare anslutna!",modalTitle:"Välj ett namn",modalDesc:"Du måste ange ett namn för att gå vidare.",modalPlaceholder:"Ditt namn"},en:{name:"Your name",enterWord:"Enter a word to start:",notFound:"Game not found.",notYourTurn:"Not your turn!",share:"Share this link:",loading:"Loading game…",yourTurn:"🎯 Your turn!",oppTurn:"⏳ Opponent's turn…",timeRanOut:"⏰ Time ran out!",hostWon:"🎉 Host won!",guestWon:"🎉 Guest won!",joinCodeMissing:"Enter a game code.",confirmBack:"Are you sure you want to leave and delete the game?",waiting:"⏳ Waiting for player…",bothIn:"🎮 Both players connected!",modalTitle:"Choose a name",modalDesc:"You must enter a name to continue.",modalPlaceholder:"Your name"}};langSel.value=lang;function applyLang(){nameLabel.textContent=T[lang].name;chatText.placeholder=(lang==="sv")?"Skriv ett meddelande...":"Type a message...";document.getElementById("nameModalTitle").textContent=T[lang].modalTitle;document.getElementById("nameModalDesc").textContent=T[lang].modalDesc;nameModalInput.placeholder=T[lang].modalPlaceholder}applyLang();langSel.onchange=()=>{lang=langSel.value;localStorage.setItem("lang",lang);applyLang()};
+const escapeH=s=>(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));const shareLink=()=>location.origin+location.pathname+"?game="+gameId;
+function requireNickname(){let stored=(nameInput.value||localStorage.getItem("nickname")||"").trim();if(stored){nameInput.value=stored;localStorage.setItem("nickname",stored);return Promise.resolve(stored)}return new Promise(res=>{nameModal.style.display="flex";nameModalInput.value="";setTimeout(()=>nameModalInput.focus(),40);function done(){let v=(nameModalInput.value||"").trim();if(!v)return;nameModal.style.display="none";nameInput.value=v;localStorage.setItem("nickname",v);res(v)}nameModalConfirm.onclick=done;nameModalInput.onkeydown=e=>{"Enter"===e.key&&done()}})}
+function updateLobby(p={},pr={}){nameHost.textContent=p.host||"—";nameGuest.textContent=p.guest||T[lang].waiting;const h=!!pr.host,g=!!pr.guest;dotHost.classList.toggle("online",h);dotHost.classList.toggle("offline",!h);dotGuest.classList.toggle("online",g);dotGuest.classList.toggle("offline",!g);lobbyMsg.textContent=(p.host&&p.guest)?T[lang].bothIn:T[lang].waiting}
+function setupPresence(role){firebase.database().ref(".info/connected").on("value",s=>{if(s.val()){const r=db.ref(`games/${gameId}/presence/${role}`);r.set(!0);r.onDisconnect().remove()}})}
+function resizeCanvas(){const w=Math.min(900,Math.floor(gameMain.clientWidth));const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.7)-180));canvas.width=Math.max(220,Math.min(w,900));canvas.height=Math.max(220,h);drawAll(currentWrong);canvas.style.maxWidth="100%";canvas.style.height="auto"}window.addEventListener("resize",()=>setTimeout(resizeCanvas,60));
+const grad=()=>{const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);g.addColorStop(0,"#ec4899");g.addColorStop(.5,"#a855f7");g.addColorStop(1,"#ec4899");return g};
+function drawAll(w){const cw=canvas.width,ch=canvas.height,sX=cw/200,sY=ch/250,lw=2*Math.min(sX,sY);ctx.clearRect(0,0,cw,ch);ctx.lineWidth=lw;ctx.strokeStyle=grad();ctx.beginPath();ctx.moveTo(10*sX,240*sY);ctx.lineTo(190*sX,240*sY);ctx.moveTo(50*sX,240*sY);ctx.lineTo(50*sX,20*sY);ctx.lineTo(130*sX,20*sY);ctx.lineTo(130*sX,50*sY);ctx.stroke();if(w>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke()}if(w>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke()}if(w>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke()}if(w>3){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke()}if(w>4){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke()}if(w>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke()}}
+function setWordDisplay(word,guesses){wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" ")}
+function buildLetters(){lettersEl.innerHTML="";letters.forEach(ch=>{const b=document.createElement("button");b.textContent=ch;b.onclick=async()=>{const snap=await db.ref("games/"+gameId).get(),d=snap.val();if(!d||d.over)return;const mine=isHost?"host":"guest";if(d.turn!==mine)return alert((lang==="sv")?"Inte din tur!":"Not your turn!");if((d.guesses||[]).includes(ch))return;let newGuesses=[...(d.guesses||[]),ch],newWrong=d.wrong||0,over=!1,winner=null;const scores={...(d.scores||{host:0,guest:0})},isWrong=!d.word.includes(ch);if(isWrong){newWrong++;canvas.classList.add("shake");setTimeout(()=>canvas.classList.remove("shake"),300)}const solved=d.word.split("").every(l=>newGuesses.includes(l));if(solved){over=!0;winner=mine;scores[mine]++}else if(newWrong>=6){over=!0;const opp=mine==="host"?"guest":"host";winner=opp;scores[opp]++}await db.ref("games/"+gameId).update({guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP})};lettersEl.appendChild(b)})}
+function stopTimerLoop(){if(rafTimer)cancelAnimationFrame(rafTimer);rafTimer=null}
+function timerLoop(){stopTimerLoop();if(timerSeconds<=0||!roundStartMs){timerBar.style.display="none";return}timerBar.style.display="block";const tick=async()=>{const now=Date.now(),remainMs=Math.max(0,timerSeconds*1000-Math.max(0,now-roundStartMs)),pct=Math.max(0,Math.min(1,remainMs/(timerSeconds*1000)));timerFill.style.width=pct*100+"%";timerFill.classList.toggle("pulse",remainMs<=3000);if(remainMs<=0){const snap=await db.ref("games/"+gameId).get(),d=snap.val();if(d&&!d.over){const opp="host"===d.turn?"guest":"host",scores={...(d.scores||{})};scores[opp]=(scores[opp]||0)+1;await db.ref("games/"+gameId).update({over:!0,scores,winner:opp});addChat({name:"System",text:(lang==="sv")?"⏰ Tiden tog slut!":"⏰ Time ran out!",ts:Date.now()})}timerBar.style.display="none";return}rafTimer=requestAnimationFrame(tick)};rafTimer=requestAnimationFrame(tick)}
+function pushChat(m){db.ref("games/"+gameId+"/chat").push({name:nickname,text:m,ts:Date.now()})}
+chatSend.onclick=()=>{const v=chatText.value.trim();if(!v)return;chatText.value="";pushChat(v)};chatText.onkeydown=e=>{"Enter"===e.key&&chatSend.click()};
+function addChat(o){const wrap=document.createElement("div");wrap.className="chatMsg";wrap.innerHTML=`<div><b>${escapeH(o.name||"??")}</b>: ${escapeH(o.text||"")}</div><div class="chatMeta">${new Date(o.ts||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`;chatList.appendChild(wrap);chatList.scrollTop=chatList.scrollHeight;setTimeout(()=>wrap.classList.add("fadeout"),15000);setTimeout(()=>wrap.remove(),16500)}
+function setTurn(turn){const mine=isHost?"host":"guest";turnEl.textContent=(turn===mine)?((lang==="sv")?"🎯 Din tur!":"🎯 Your turn!"):((lang==="sv")?"⏳ Motståndarens tur…":"⏳ Opponent's turn…");turnEl.style.opacity=".3";setTimeout(()=>turnEl.style.opacity="1",120)}
+function showGame(){startDiv.classList.add("hidden");gameDiv.classList.remove("hidden");resizeCanvas();buildLetters();shareEl.innerHTML=`${T[lang].share} <a href="${shareLink()}" target="_blank" rel="noopener">${shareLink()}</a>`}
+backBtn.onclick=()=>{if(!confirm(T[lang].confirmBack))return;if(gameId)db.ref("games/"+gameId).remove();location.href=location.pathname};
+createBtn.onclick=async()=>{nickname=(nameInput.value||"").trim();if(!nickname)nickname=await requireNickname();const word=(prompt(T[lang].enterWord)||"").toUpperCase();if(!/^[A-ZÅÄÖ]+$/.test(word))return alert("Endast bokstäver A–Ö!");const id="hangman-"+Math.random().toString(36).substr(2,5);await db.ref("games/"+id).set({word,guesses:[],wrong:0,turn:"guest",over:!1,players:{host:nickname},scores:{host:0,guest:0},settings:{timerSeconds:0},presence:{},roundStartMs:0});isHost=!0;gameId=id;showGame();setupPresence("host");listenGame()};
+joinBtn.onclick=()=>joinArea.classList.remove("hidden");
+joinGo.onclick=async()=>{const code=(joinCodeInput.value||"").trim();if(!code)return alert(T[lang].joinCodeMissing);nickname=(nameInput.value||"").trim();if(!nickname)nickname=await requireNickname();const id="hangman-"+code;const snap=await db.ref("games/"+id).get();if(!snap.exists())return alert(T[lang].notFound);await db.ref("games/"+id+"/players").update({guest:nickname});isHost=!1;gameId=id;showGame();setupPresence("guest");listenGame()};
+(async function directJoin(){if(!deepLinkGame)return;showGame();nickname=(nameInput.value||"").trim();if(!nickname)nickname=await requireNickname();const snap=await db.ref("games/"+deepLinkGame).get();if(!snap.exists())return backBtn.click();const d=snap.val();if(!d.players?.guest){await db.ref("games/"+deepLinkGame+"/players").update({guest:nickname})}isHost=!1;gameId=deepLinkGame;setupPresence("guest");listenGame()})();
+function listenGame(){if(!gameId)return;db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added",s=>addChat(s.val()));db.ref("games/"+gameId).on("value",snap=>{const d=snap.val();if(!d)return;updateLobby(d.players||{},d.presence||{});const key=JSON.stringify([d.guesses,d.wrong,d.over,d.turn,d.scores,d.settings,d.roundStartMs,d.winner]);if(key===lastUpdateKey)return;lastUpdateKey=key;timerSeconds=d.settings?.timerSeconds||0;roundStartMs=d.roundStartMs||0;(d.over||timerSeconds<=0)?(stopTimerLoop(),timerBar.style.display=(timerSeconds>0&&!d.over)?"block":"none"):timerLoop();setWordDisplay(d.word,d.guesses||[]);currentWrong=d.wrong||0;drawAll(currentWrong);const used=new Set(d.guesses||[]);lettersEl.querySelectorAll("button").forEach(b=>b.disabled=used.has(b.textContent));scoreEl.textContent=`🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`;setTurn(d.turn);const link=shareLink();shareEl.innerHTML=`${T[lang].share} <a href="${link}" target="_blank" rel="noopener">${link}</a>`;if(d.over){restartBtn.classList.remove("hidden");newWordBtn.classList.remove("hidden");addChat({name:"System",text:(d.winner==="host")?((lang==="sv")?"🎉 Värden vann!":"🎉 Host won!"):((lang==="sv")?"🎉 Gästen vann!":"🎉 Guest won!"),ts:Date.now()})}else{restartBtn.classList.add("hidden");newWordBtn.classList.add("hidden")}})}
+restartBtn.onclick=async()=>{const s=await db.ref("games/"+gameId).get(),d=s.val();if(!d)return;await db.ref("games/"+gameId).update({guesses:[],wrong:0,over:!1,winner:null,roundStartMs:(timerSeconds>0?Date.now():0)})};
+newWordBtn.onclick=async()=>{const s=await db.ref("games/"+gameId).get(),d=s.val();if(!d.over)return alert((lang==="sv")?"Rundan är inte slut än.":"Round not over.");const nw=(prompt(T[lang].enterWord)||"").toUpperCase();if(!/^[A-ZÅÄÖ]+$/.test(nw))return;const nextTurn=d.turn==="host"?"guest":"host";await db.ref("games/"+gameId).update({word:nw,guesses:[],wrong:0,over:!1,winner:null,turn:nextTurn,roundStartMs:(timerSeconds>0?Date.now():0)})};
+timerOpen.onclick=()=>{timerConfig.classList.remove("hidden");timerOpen.classList.add("hidden")};timerCancel.onclick=()=>{timerConfig.classList.add("hidden");timerOpen.classList.remove("hidden")};timerConfirm.onclick=async()=>{const v=Math.max(0,Math.min(100,Number(timerInput.value||0)));await db.ref("games/"+gameId+"/settings").update({timerSeconds:v});await db.ref("games/"+gameId").update({roundStartMs:firebase.database.ServerValue.TIMESTAMP});timerConfig.classList.add("hidden")};timerOff.onclick=async()=>{await db.ref("games/"+gameId+"/settings").update({timerSeconds:0});await db.ref("games/"+gameId).update({roundStartMs:0});timerConfig.classList.add("hidden");timerOpen.classList.remove("hidden")};
+window.addEventListener("load",()=>{if(!deepLinkGame){startDiv.classList.remove("hidden");gameDiv.classList.add("hidden")}resizeCanvas()});
+</script></body></html>
