@@ -2,11 +2,10 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <!-- Viewport: allow responsive but prevent accidental zoom on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>HÄNGA GUBBE</title>
 
-  <!-- Fonts & Firebase SDKs -->
+  <!-- Fonts & Firebase -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
@@ -20,13 +19,15 @@
       --ok:#22c55e; --bad:#ef4444;
     }
     *{box-sizing:border-box}
+    html, body { height:100%; }
     body{
       margin:0; font-family:"Poppins",sans-serif; color:var(--text);
       background: radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
-      height:100dvh; display:grid; place-items:center; padding:10px; overflow:hidden;
+      min-height:100dvh; display:grid; place-items:center; padding:10px;
+      overflow-x:hidden; /* ✅ Ingen horisontell scroll */
     }
     h1{
-      font-weight:700; text-align:center; margin:0 0 12px;
+      font-weight:700; text-align:center; margin:0;
       font-size:clamp(1.25rem, 2.8vw, 1.75rem);
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
@@ -41,7 +42,7 @@
       display:flex; flex-direction:column; gap:10px; overflow:hidden;
     }
 
-    /* START screen layout */
+    /* Forms & buttons */
     .stack > *{display:block; width:100%; margin-top:12px}
     .row{display:flex; gap:10px; align-items:center}
     .row > *{flex:1}
@@ -57,11 +58,10 @@
     }
     button:hover{transform:translateY(-2px); box-shadow:0 8px 22px rgba(168,85,247,.35)}
     .btn-ghost{background:transparent; color:var(--text); border:1px solid #3a3a3f; box-shadow:none}
-
     .start-icons{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
     .tag{font-size:.75rem; color:#111; background:rgba(255,255,255,.55); padding:.1rem .45rem; border-radius:999px; margin-left:.5rem}
 
-    /* LOBBY BAR (sticky, with pulsing dots) */
+    /* Lobby bar (sticky) */
     #lobbyBar{
       position:sticky; top:0; z-index:5;
       background:linear-gradient(0deg, rgba(0,0,0,.0), rgba(0,0,0,.12));
@@ -76,13 +76,13 @@
     @keyframes pulseDot{0%{transform:scale(1);opacity:.9}50%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:.9}}
     #lobbyMsg{font-size:.9rem; color:var(--text-dim)}
 
-    /* Loading spinner */
+    /* Loading */
     .loading{display:flex; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); padding:6px 0}
     .spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* Game main area (scrolls internally when needed) */
-    #gameMain{flex:1; display:flex; flex-direction:column; gap:8px; overflow:auto; padding-bottom:6px}
+    /* GAME MAIN – Alternative A: focus gameplay. Vertical-only scroll allowed. */
+    #gameMain{flex:1; display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; padding-bottom:6px}
     #share{font-size:.9rem; color:var(--text-dim); word-break:break-all; text-align:center}
     #scoreboard{
       margin-top:2px; font-weight:700; text-align:center; font-size:clamp(1rem,2.6vw,1.2rem);
@@ -92,28 +92,30 @@
     #turnIndicator{margin-top:2px; text-align:center; font-weight:600; color:var(--text-dim); transition:opacity .25s, transform .25s}
     .turn-flash{opacity:0; transform:translateY(-4px)}
 
-    /* Canvas constraints for small screens */
+    /* Canvas: keep big; never force horizontal scroll */
     #hangman{
       width:100%; aspect-ratio:200/250; background:#111; border:1px solid #333; border-radius:12px;
-      max-height:38dvh; min-height:220px;
+      max-height:40dvh; min-height:220px;
     }
     .shake{animation:shake .3s ease}
     @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
 
     #word{letter-spacing:.25em; font-size:clamp(1.05rem,4vw,1.5rem); text-align:center}
 
-    /* Timer bar above letters */
+    /* Timer bar */
     #timerBar{margin:4px 0 0; width:100%; height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none}
     #timerFill{height:100%; width:0%; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s linear, filter .2s linear}
     .pulse{animation:pulse 0.8s ease-in-out infinite}
     @keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
 
-    /* Letters grid – ensure visibility on mobile */
+    /* Letters grid – ensure all visible without horizontal scroll */
     #letters{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(34px,1fr));
+      grid-template-columns:repeat(9, 1fr); /* 9 cols fits A–Ö well on mobile */
       gap:6px; margin-top:6px;
-      padding-bottom:2px;
+    }
+    @media (min-width:520px){
+      #letters{ grid-template-columns:repeat(12, 1fr); }
     }
     #letters button{
       padding:.5rem .25rem; border-radius:10px; color:#111; font-weight:800; border:none;
@@ -121,16 +123,16 @@
     }
     #letters button:disabled{opacity:.35; filter:saturate(.7); cursor:default}
 
-    /* Chat – always available, scroll inside */
+    /* Chat – placed after gameplay; own vertical scroll; no horizontal overflow */
     #chatWrap{border:1px solid #2b2b30; border-radius:12px; background:rgba(255,255,255,.05); padding:8px; display:flex; flex-direction:column; gap:6px; min-height:120px}
-    #chatList{flex:1; min-height:60px; max-height:22dvh; overflow:auto; display:flex; flex-direction:column; gap:6px}
+    #chatList{flex:1; min-height:60px; max-height:22dvh; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:6px}
     .chatMsg{background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px 8px; font-size:.95rem; line-height:1.25; opacity:1; transition:opacity .6s ease}
     .chatMsg.fadeout{opacity:0}
     .chatMeta{font-size:.75rem; color:var(--text-dim); margin-top:2px}
     #chatRow{display:flex; gap:8px}
     #chatText{background:#222; color:#fff; border:1px solid #333; border-radius:10px; padding:.6rem .9rem; flex:1}
     #chatSend{min-width:110px}
-    #chatRow button{width:auto; flex:0 0 auto;} /* important fix */
+    #chatRow button{width:auto; flex:0 0 auto;} /* critical fix to prevent horizontal growth */
 
     #actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
     .action{padding:.7rem 1rem; border-radius:12px; border:none; font-weight:700; cursor:pointer;
@@ -139,12 +141,13 @@
 
     .hidden{display:none !important}
 
-    /* Nickname modal (blocks joining until set) */
+    /* Nickname modal (blocking) */
     #nameModal{
       position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:9999;
+      padding:16px;
     }
     #nameModal .modal{
-      width:min(440px, 92vw); background:rgba(20,20,24,.95); border:1px solid #333; border-radius:14px; padding:16px;
+      width:min(440px, 92vw); background:rgba(20,20,24,.97); border:1px solid #333; border-radius:14px; padding:16px;
       box-shadow:0 10px 30px rgba(0,0,0,.6);
     }
     #nameModal h2{margin:0 0 8px; font-size:1.1rem}
@@ -155,7 +158,7 @@
 </head>
 
 <body>
-  <!-- START SCREEN -->
+  <!-- START -->
   <div id="start" class="card">
     <h1>HÄNGA GUBBE</h1>
     <div class="stack">
@@ -184,13 +187,13 @@
     </div>
   </div>
 
-  <!-- GAME SCREEN -->
-  <div id="game" class="card">
-    <!-- LOBBY BAR -->
+  <!-- GAME -->
+  <div id="game" class="card" style="display:none">
+    <!-- Sticky Lobby -->
     <div id="lobbyBar">
       <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span></div>
       <div class="lobbyItem"><span id="dotGuest" class="dot offline"></span>👤 <span id="nameGuest">⏳ Väntar på spelare…</span></div>
-      <div id="lobbyMsg" class="lobbyItem dim">—</div>
+      <div id="lobbyMsg" class="lobbyItem" style="color:var(--text-dim)">—</div>
     </div>
 
     <div id="gameMain">
@@ -203,7 +206,6 @@
 
       <div id="share" class="dim"></div>
       <div id="scoreboard">🧑 0 | 👤 0</div>
-
       <div id="turnIndicator" class="dim">⏳ Väntar på tur…</div>
 
       <canvas id="hangman"></canvas>
@@ -239,7 +241,7 @@
     </div>
   </div>
 
-  <!-- Nickname Modal (blocks until name provided) -->
+  <!-- Nickname modal -->
   <div id="nameModal">
     <div class="modal">
       <h2 id="nameModalTitle">Välj ett namn</h2>
@@ -252,7 +254,7 @@
   </div>
 
   <script>
-    // Firebase init
+    /* ===================== Firebase ===================== */
     const firebaseConfig = {
       apiKey: "AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
       authDomain: "hangman-6a99e.firebaseapp.com",
@@ -266,7 +268,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // DOM refs
+    /* ===================== DOM refs ===================== */
     const startDiv = document.getElementById("start");
     const gameDiv  = document.getElementById("game");
     const gameMain = document.getElementById("gameMain");
@@ -318,11 +320,10 @@
     const nameModalTitle = document.getElementById("nameModalTitle");
     const nameModalDesc = document.getElementById("nameModalDesc");
 
-    // State
+    /* ===================== State ===================== */
     const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
     const params  = new URLSearchParams(location.search);
-    const deepLinkGame = params.get("game"); // e.g. hangman-abc12
-
+    const deepLinkGame = params.get("game"); // ✅ Declared ONCE
     let gameId = "";
     let isHost = false;
     let nickname = "";
@@ -336,7 +337,7 @@
     let lastUpdateKey = "";
     let presenceRef = null;
 
-    // i18n
+    /* ===================== i18n ===================== */
     const t = {
       sv: {
         name: "Ditt namn",
@@ -380,7 +381,7 @@
       }
     };
     function i18n(){
-      nameLabel.textContent = t[lang].name;
+      document.getElementById("nameLabel").textContent = t[lang].name;
       chatText.placeholder = (lang==="sv")?"Skriv ett meddelande...":"Type a message...";
       loadingText.textContent = t[lang].loading;
       nameModalTitle.textContent = t[lang].modalTitle;
@@ -391,23 +392,23 @@
     i18n();
     langSel.onchange = ()=>{ lang = langSel.value; i18n(); }
 
-    // Utils
+    /* ===================== Utils ===================== */
     function escapeHtml(s){return (s||"").replace(/[&<>\"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]))}
     function showLoading(show){ loading.classList.toggle("hidden", !show); }
     function linkFor(id){ return `${location.origin}${location.pathname}?game=${id}`; }
 
-    // Nickname modal flow (blocks until name provided)
+    // Nickname modal (blocking for join/create/direct link)
     function requireNickname() {
-      // prefer already typed in field
       let stored = (nameInput.value || localStorage.getItem("nickname") || "").trim();
       if(stored){
+        nameInput.value = stored;
         localStorage.setItem("nickname", stored);
         return Promise.resolve(stored);
       }
       return new Promise(resolve=>{
         nameModal.style.display = "flex";
         nameModalInput.value = "";
-        nameModalInput.focus();
+        setTimeout(()=>nameModalInput.focus(), 50);
         function complete(){
           let v = (nameModalInput.value || "").trim();
           if(!v) return;
@@ -421,10 +422,10 @@
       });
     }
 
-    // Presence
+    /* ===================== Presence / Lobby ===================== */
     function updateLobbyBar(players={}, presence={}){
       nameHost.textContent  = players.host  || "—";
-      nameGuest.textContent = players.guest || ((lang==="sv")?t[lang].waiting:t[lang].waiting);
+      nameGuest.textContent = players.guest || t[lang].waiting;
 
       const hostOn  = !!presence.host;
       const guestOn = !!presence.guest;
@@ -433,9 +434,7 @@
       dotGuest.classList.toggle("online", guestOn);
       dotGuest.classList.toggle("offline", !guestOn);
 
-      lobbyMsg.textContent = (players.host && players.guest)
-        ? t[lang].bothIn
-        : t[lang].waiting;
+      lobbyMsg.textContent = (players.host && players.guest) ? t[lang].bothIn : t[lang].waiting;
     }
     function setupPresence(id, role){
       firebase.database().ref(".info/connected").on("value", snap=>{
@@ -447,13 +446,13 @@
       });
     }
 
-    // Canvas
+    /* ===================== Canvas ===================== */
     function resizeCanvas(){
       const w = Math.min(560, Math.floor(gameMain.clientWidth*0.98));
       const h = Math.floor(w*1.25);
       canvas.width=w; canvas.height=h; drawAll(currentWrong);
     }
-    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("resize", ()=>setTimeout(resizeCanvas, 50));
     function strokeGrad(){
       const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
       g.addColorStop(0,"#ec4899"); g.addColorStop(.5,"#a855f7"); g.addColorStop(1,"#ec4899"); return g;
@@ -471,7 +470,7 @@
       if(wrong>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke();}
     }
 
-    // Word & Letters
+    /* ===================== Word & Letters ===================== */
     function showWord(word, guesses){ wordEl.textContent = (word||"").split("").map(l => (guesses||[]).includes(l)?l:"_").join(" "); }
     function buildLetters(){
       lettersEl.innerHTML="";
@@ -498,7 +497,7 @@
       });
     }
 
-    // Timer
+    /* ===================== Timer ===================== */
     function startTimerLoop(){
       stopTimerLoop();
       if(timerSeconds<=0 || !roundStartMs) { timerBar.style.display="none"; return; }
@@ -555,7 +554,7 @@
       timerConfig.classList.add("hidden"); timerOpen.classList.remove("hidden");
     };
 
-    // Chat
+    /* ===================== Chat ===================== */
     function pushChat(text){
       db.ref("games/"+gameId+"/chat").push({ name:nickname, text, ts:firebase.database.ServerValue.TIMESTAMP });
     }
@@ -573,7 +572,7 @@
     };
     chatText.addEventListener("keydown", e=>{ if(e.key==="Enter") chatSend.click(); });
 
-    // Turn indicator
+    /* ===================== Turn indicator ===================== */
     function setTurn(turn){
       const mine = isHost ? "host":"guest";
       turnEl.classList.add("turn-flash");
@@ -581,9 +580,30 @@
       setTimeout(()=>turnEl.classList.remove("turn-flash"), 10);
     }
 
-    // Flow
-    // removed duplicate deepLinkGame declaration
+    /* ===================== Flow ===================== */
+    function openGame(){
+      startDiv.style.display="none";
+      gameDiv.style.display="flex";
+      resizeCanvas(); buildLetters(); initGameListeners(); updateShare();
+      if(isHost) setupPresence(gameId, "host");
+    }
+    function updateShare(){
+      const link = `${location.origin}${location.pathname}?game=${gameId}`;
+      shareEl.innerHTML = `${t[lang].share}<a href="${link}" target="_blank" rel="noopener">${link}</a>`;
+    }
+    function backToStart(ask=true){
+      const proceed = ask ? confirm(t[lang].confirmBack) : true;
+      if(!proceed) return;
+      if(gameId){ db.ref("games/"+gameId).remove().catch(()=>{}); }
+      gameId=""; isHost=false;
+      gameDiv.style.display="none"; startDiv.style.display="flex";
+      chatList.innerHTML=""; lettersEl.innerHTML=""; wordEl.textContent="_";
+      scoreEl.textContent="🧑 0 | 👤 0"; turnEl.textContent="⏳"; timerBar.style.display="none";
+      joinArea.classList.add("hidden");
+    }
+    backBtn.onclick = ()=> backToStart(true);
 
+    /* ===================== Create / Join / Deep link ===================== */
     createBtn.onclick = async ()=>{
       nickname = (nameInput.value||"").trim();
       if(!nickname){ nickname = await requireNickname(); }
@@ -621,8 +641,8 @@
 
     (async function handleDeepLink(){
       const id = deepLinkGame;
-      if(!id) return;
-      startDiv.classList.add("hidden"); gameDiv.style.display="flex"; resizeCanvas();
+      if(!id) return; // no direct link
+      startDiv.style.display="none"; gameDiv.style.display="flex"; resizeCanvas();
       nickname = (nameInput.value||"").trim();
       if(!nickname){ nickname = await requireNickname(); }
       showLoading(true);
@@ -638,28 +658,7 @@
       updateShare();
     })();
 
-    function openGame(){
-      startDiv.classList.add("hidden");
-      gameDiv.style.display="flex";
-      resizeCanvas(); buildLetters(); initGameListeners(); updateShare();
-      if(isHost) setupPresence(gameId, "host");
-    }
-    function updateShare(){
-      const link = linkFor(gameId);
-      shareEl.innerHTML = `${t[lang].share}<a href="${link}" target="_blank" rel="noopener">${link}</a>`;
-    }
-    function backToStart(ask=true){
-      const proceed = ask ? confirm(t[lang].confirmBack) : true;
-      if(!proceed) return;
-      if(gameId){ db.ref("games/"+gameId).remove().catch(()=>{}); }
-      gameId=""; isHost=false;
-      gameDiv.style.display="none"; startDiv.classList.remove("hidden");
-      chatList.innerHTML=""; lettersEl.innerHTML=""; wordEl.textContent="_";
-      scoreEl.textContent="🧑 0 | 👤 0"; turnEl.textContent="⏳"; timerBar.style.display="none";
-      joinArea.classList.add("hidden");
-    }
-    backBtn.onclick = ()=> backToStart(true);
-
+    /* ===================== Game listeners ===================== */
     function initGameListeners(){
       buildLetters();
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added", s=> appendChat(s.val()));
@@ -687,7 +686,7 @@
         if(d.over){
           restartBtn.classList.remove("hidden");
           newWordBtn.classList.remove("hidden");
-          const msg = d.winner==="host" ? ((lang==="sv")?"🎉 Värden vann!":"🎉 Host won!") : ((lang==="sv")?"🎉 Gästen vann!":"🎉 Guest won!");
+          const msg = d.winner==="host" ? t[lang].hostWon : t[lang].guestWon;
           pushTemporaryInfo(msg);
         } else {
           restartBtn.classList.add("hidden");
@@ -695,6 +694,7 @@
         }
       });
     }
+
     function pushTemporaryInfo(text){ appendChat({name:"System", text, ts:Date.now()}); }
 
     restartBtn.onclick = async ()=>{
@@ -712,10 +712,9 @@
       });
     };
 
-    // Initial view
-    if(!deepLinkGame){ startDiv.classList.remove("hidden"); gameDiv.style.display="none"; }
-    window.addEventListener("orientationchange", ()=>setTimeout(resizeCanvas, 250));
-    window.addEventListener("load", resizeCanvas);
+    // init sizing
+    window.addEventListener("load", ()=>setTimeout(resizeCanvas, 50));
+    if(!deepLinkGame){ startDiv.style.display="flex"; gameDiv.style.display="none"; }
   </script>
 </body>
 </html>
