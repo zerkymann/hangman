@@ -17,6 +17,7 @@
       --panel:rgba(255,255,255,.08);
       --text:#fff; --text-dim:#bdbdbd;
       --ok:#22c55e; --bad:#ef4444;
+      --gap:10px;
     }
     *{box-sizing:border-box}
     html, body { height:100%; }
@@ -24,7 +25,8 @@
       margin:0; font-family:"Poppins",sans-serif; color:var(--text);
       background: radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%), linear-gradient(160deg, var(--bg1), var(--bg2));
       min-height:100dvh; display:grid; place-items:center; padding:10px;
-      overflow-x:hidden; /* ✅ Ingen horisontell scroll */
+      overflow-x:hidden; /* ✅ No horizontal scroll anywhere */
+      -webkit-tap-highlight-color: transparent;
     }
     h1{
       font-weight:700; text-align:center; margin:0;
@@ -33,13 +35,13 @@
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
     .card{
-      width:min(900px, 98vw);
+      width:min(1000px, 98vw);
       height:min(96dvh, 880px);
       background:var(--panel);
       border-radius:18px; backdrop-filter:blur(12px);
       box-shadow:0 0 25px rgba(0,0,0,.6);
       padding:12px; position:relative;
-      display:flex; flex-direction:column; gap:10px; overflow:hidden;
+      display:flex; flex-direction:column; gap:var(--gap); overflow:hidden;
     }
 
     /* Forms & buttons */
@@ -66,10 +68,10 @@
       position:sticky; top:0; z-index:5;
       background:linear-gradient(0deg, rgba(0,0,0,.0), rgba(0,0,0,.12));
       border:1px solid #2b2b30; border-radius:12px;
-      padding:8px 10px; display:flex; gap:10px; justify-content:center; align-items:center;
+      padding:8px 10px; display:flex; gap:12px; justify-content:center; align-items:center;
       backdrop-filter:blur(10px);
     }
-    .lobbyItem{display:flex; align-items:center; gap:8px; font-size:.95rem}
+    .lobbyItem{display:flex; align-items:center; gap:8px; font-size:.95rem; white-space:nowrap}
     .dot{width:10px; height:10px; border-radius:999px; display:inline-block; animation:pulseDot 1.4s ease-in-out infinite}
     .online{background:#22c55e}
     .offline{background:#ef4444}
@@ -81,8 +83,14 @@
     .spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* GAME MAIN – Alternative A: focus gameplay. Vertical-only scroll allowed. */
-    #gameMain{flex:1; display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; padding-bottom:6px}
+    /* GAME MAIN – vertical scroll only */
+    #gameMain{
+      flex:1; display:flex; flex-direction:column;
+      gap:12px; overflow-y:auto; overflow-x:hidden; padding:6px;
+      scroll-behavior:smooth;
+      max-width:900px; /* keeps 16:9 feel on desktop */
+      margin:0 auto;
+    }
     #share{font-size:.9rem; color:var(--text-dim); word-break:break-all; text-align:center}
     #scoreboard{
       margin-top:2px; font-weight:700; text-align:center; font-size:clamp(1rem,2.6vw,1.2rem);
@@ -92,7 +100,7 @@
     #turnIndicator{margin-top:2px; text-align:center; font-weight:600; color:var(--text-dim); transition:opacity .25s, transform .25s}
     .turn-flash{opacity:0; transform:translateY(-4px)}
 
-    /* Canvas: keep big; never force horizontal scroll */
+    /* Canvas */
     #hangman{
       width:100%; aspect-ratio:200/250; background:#111; border:1px solid #333; border-radius:12px;
       max-height:40dvh; min-height:220px;
@@ -100,39 +108,32 @@
     .shake{animation:shake .3s ease}
     @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
 
-    #word{letter-spacing:.25em; font-size:clamp(1.05rem,4vw,1.5rem); text-align:center}
+    #word{letter-spacing:.25em; font-size:clamp(1.05rem,4vw,1.6rem); text-align:center}
 
     /* Timer bar */
-    #timerBar{margin:4px 0 0; width:100%; height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none}
+    #timerBar{margin:6px 0 2px; width:100%; height:11px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none}
     #timerFill{height:100%; width:0%; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s linear, filter .2s linear}
     .pulse{animation:pulse 0.8s ease-in-out infinite}
     @keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
 
-    /* Letters grid – ensure all visible without horizontal scroll */
-    #letters{
-      display:grid;
-      grid-template-columns:repeat(9, 1fr); /* 9 cols fits A–Ö well on mobile */
-      gap:6px; margin-top:6px;
-    }
-    @media (min-width:520px){
-      #letters{ grid-template-columns:repeat(12, 1fr); }
-    }
+    /* Letters grid – desktop default (airy) */
+    #letters{ display:grid; gap:8px; margin-top:6px; margin-bottom:14px; }
     #letters button{
-      padding:.5rem .25rem; border-radius:10px; color:#111; font-weight:800; border:none;
+      padding:.55rem .3rem; border-radius:10px; color:#111; font-weight:800; border:none;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 18px rgba(168,85,247,.25)
     }
     #letters button:disabled{opacity:.35; filter:saturate(.7); cursor:default}
 
-    /* Chat – placed after gameplay; own vertical scroll; no horizontal overflow */
-    #chatWrap{border:1px solid #2b2b30; border-radius:12px; background:rgba(255,255,255,.05); padding:8px; display:flex; flex-direction:column; gap:6px; min-height:120px}
-    #chatList{flex:1; min-height:60px; max-height:22dvh; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:6px}
+    /* Chat */
+    #chatWrap{border:1px solid #2b2b30; border-radius:12px; background:rgba(255,255,255,.05); padding:10px; display:flex; flex-direction:column; gap:8px; min-height:120px}
+    #chatList{flex:1; min-height:72px; max-height:24dvh; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:6px}
     .chatMsg{background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px 8px; font-size:.95rem; line-height:1.25; opacity:1; transition:opacity .6s ease}
     .chatMsg.fadeout{opacity:0}
     .chatMeta{font-size:.75rem; color:var(--text-dim); margin-top:2px}
     #chatRow{display:flex; gap:8px}
     #chatText{background:#222; color:#fff; border:1px solid #333; border-radius:10px; padding:.6rem .9rem; flex:1}
     #chatSend{min-width:110px}
-    #chatRow button{width:auto; flex:0 0 auto;} /* critical fix to prevent horizontal growth */
+    #chatRow button{width:auto; flex:0 0 auto;}
 
     #actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
     .action{padding:.7rem 1rem; border-radius:12px; border:none; font-weight:700; cursor:pointer;
@@ -141,7 +142,32 @@
 
     .hidden{display:none !important}
 
-    /* Nickname modal (blocking) */
+    /* ======= Responsive rules ======= */
+
+    /* Desktop / large (keeps 16:9 feel) */
+    @media (min-width: 960px){
+      #letters{ grid-template-columns:repeat(12, 1fr); }
+      #chatList{ max-height:26dvh; }
+      #gameMain{ padding:10px 8px 12px; }
+    }
+
+    /* Tablet & Mobile */
+    @media (max-width: 959px){
+      #gameMain{ padding:8px 6px 16px; }
+      /* 8 columns so no cramped keys; adds air below */
+      #letters{ grid-template-columns:repeat(8, 1fr); margin-bottom:18px; }
+      #chatWrap{ margin-top:8px; }
+      #chatList{ max-height:28dvh; }
+      #hangman{ max-height:42dvh; }
+    }
+
+    /* Small phones */
+    @media (max-width: 420px){
+      #letters{ grid-template-columns:repeat(7, 1fr); }
+      #chatList{ max-height:30dvh; }
+    }
+
+    /* Nickname modal */
     #nameModal{
       position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:9999;
       padding:16px;
@@ -211,6 +237,7 @@
       <canvas id="hangman"></canvas>
       <div id="word">_</div>
 
+      <!-- Timer controls -->
       <div class="row" id="timerControlsRow" style="justify-content:center; flex-wrap:wrap">
         <button id="timerOpen" class="action hidden" style="max-width:220px">⏱ Ställ in timer</button>
         <div id="timerConfig" class="row hidden" style="max-width:520px; width:100%;">
@@ -225,6 +252,7 @@
 
       <div id="letters"></div>
 
+      <!-- Chat below letters -->
       <div id="chatWrap">
         <div id="chatList"></div>
         <div id="chatRow">
@@ -323,7 +351,7 @@
     /* ===================== State ===================== */
     const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
     const params  = new URLSearchParams(location.search);
-    const deepLinkGame = params.get("game"); // ✅ Declared ONCE
+    const deepLinkGame = params.get("game"); // ✅ Declared once
     let gameId = "";
     let isHost = false;
     let nickname = "";
@@ -397,7 +425,7 @@
     function showLoading(show){ loading.classList.toggle("hidden", !show); }
     function linkFor(id){ return `${location.origin}${location.pathname}?game=${id}`; }
 
-    // Nickname modal (blocking for join/create/direct link)
+    // Nickname modal (blocking)
     function requireNickname() {
       let stored = (nameInput.value || localStorage.getItem("nickname") || "").trim();
       if(stored){
@@ -422,7 +450,7 @@
       });
     }
 
-    /* ===================== Presence / Lobby ===================== */
+    /* ===================== Presence ===================== */
     function updateLobbyBar(players={}, presence={}){
       nameHost.textContent  = players.host  || "—";
       nameGuest.textContent = players.guest || t[lang].waiting;
