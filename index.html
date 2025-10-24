@@ -582,7 +582,7 @@
     }
 
     // Flow
-    const deepLinkGame = new URLSearchParams(location.search).get("game");
+    // removed duplicate deepLinkGame declaration
 
     createBtn.onclick = async ()=>{
       nickname = (nameInput.value||"").trim();
