@@ -2,16 +2,24 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1, user-scalable=no"/>
   <title>HÄNGA GUBBE</title>
-  <meta name="theme-color" content="#0b0b0e">
+  <meta name="theme-color" content="#0b0b0e"/>
+
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
+  <!-- Preload background for faster first paint -->
+  <link rel="preload" as="image" href="/img/bg-game-1920.jpg" imagesrcset="/img/bg-game-1920.jpg 1x, /img/bg-game-3840.jpg 2x" />
+
   <style>
     :root{
-      --grad-a:#e5e7eb; --grad-b:#a1a1aa;
-      --bg1:#0b0b0e; --bg2:#141419;
+      --grad-a:#e5e7eb; --grad-b:#a1a1aa;       /* mono gradient */
+      --bg1:#0b0b0e; --bg2:#141419;             /* dark base */
       --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.08);
       --line:#2c2c33; --text:#fff; --text-dim:#bdbdbd; --muted:#8b8b95;
       --chip-bg:#1b1b20; --chip-line:#2e2e35;
@@ -19,39 +27,120 @@
       --shadow-1:0 16px 38px rgba(0,0,0,.5); --shadow-2:0 4px 18px rgba(0,0,0,.4);
       --gap:14px;
     }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; color:var(--text);
       font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
       background: radial-gradient(1200px 900px at 20% 20%, #1a1a1f 0%, rgba(26,26,31,0) 55%), linear-gradient(160deg,var(--bg1),var(--bg2));
-      overflow:hidden;
+      overflow:hidden; /* page doesn't scroll; shell does */
     }
-    .bg{position:fixed; inset:0; z-index:-2; pointer-events:none; overflow:hidden}
-    #bgParticles,#bgVignette{position:absolute; inset:0}
-    #bgVignette{background:radial-gradient(90% 80% at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.55) 100%); z-index:1}
-    .shell{position:relative; z-index:1; height:100dvh; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:var(--gap)}
+
+    /* --- Background layers --- */
+    .bgImage{
+      position:fixed; inset:0; z-index:-3; pointer-events:none;
+      /* Use image-set for HiDPI/4K; browser picks best source */
+      background-image: image-set(
+        url("/img/bg-game-1920.jpg") 1x,
+        url("/img/bg-game-3840.jpg") 2x
+      );
+      background-size: cover;
+      background-position: center;
+      filter: saturate(0.9) brightness(0.62) contrast(1.05);
+      transform: translate3d(0,0,0);
+    }
+    /* Fallback if image-set unsupported */
+    @supports not (background-image: image-set(url("/img/bg-game-1920.jpg") 1x)) {
+      .bgImage{ background-image: url("/img/bg-game-3840.jpg") }
+    }
+    /* Ensure 4K assets on very high resolution even if DPR reports differently */
+    @media (min-resolution: 1.5dppx) {
+      .bgImage{ background-image: url("/img/bg-game-3840.jpg") }
+    }
+
+    .bg{
+      position:fixed; inset:0; z-index:-2; pointer-events:none; overflow:hidden;
+    }
+    #bgParticles, #bgVignette{position:absolute; inset:0}
+    #bgVignette{
+      background: radial-gradient(90% 80% at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.55) 100%);
+      z-index:1; /* above bg image for readability */
+    }
+
+    /* --- App shell --- */
+    .shell{
+      position:relative; z-index:1;
+      height:100dvh; overflow:auto;
+      padding:16px; display:flex; flex-direction:column; gap:var(--gap);
+    }
+
+    /* --- Intro stinger --- */
     .stinger{position:fixed; inset:0; background:#000; display:flex; align-items:center; justify-content:center; z-index:9999; pointer-events:none; transition:opacity .6s ease}
     .stinger .logo{width:min(140px,22vw); height:min(140px,22vw); border-radius:22px; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 12px 42px rgba(200,200,200,.25); transform:scale(.8); opacity:0; animation:stingerPop 1.2s cubic-bezier(0.22,1,0.36,1) forwards .2s}
     .stinger.out{opacity:0}
     @keyframes stingerPop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.05);opacity:1}100%{transform:scale(1);opacity:1}}
-    .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl); padding:10px 12px; box-shadow:var(--shadow-2); backdrop-filter:blur(10px)}
+
+    /* --- Top bar --- */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl);
+      padding:10px 12px; box-shadow:var(--shadow-2); backdrop-filter:blur(10px);
+    }
     .brand{display:flex; align-items:center; gap:10px}
     .brand .cube{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 20px rgba(200,200,200,.25)}
-    .title{margin:0; line-height:1; letter-spacing:.02em; font-family:"Bebas Neue", sans-serif; font-size:clamp(1.2rem,2.4vw,1.8rem); background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; -webkit-text-fill-color:transparent}
+    .title{
+      margin:0; line-height:1; letter-spacing:.02em;
+      font-family:"Bebas Neue", sans-serif; font-size:clamp(1.2rem,2.4vw,1.8rem);
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
     .topbar-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
     #share{color:var(--text-dim); font-size:.95rem}
-    .codeChip{display:inline-flex; align-items:center; gap:.4rem; padding:.28rem .6rem; border:1px solid var(--chip-line); border-radius:.7rem; background:var(--chip-bg); color:#fff; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; letter-spacing:.03em; box-shadow:var(--shadow-2); user-select:all}
-    input,select,button{font-family:inherit; font-size:1rem; border-radius:var(--radius-md); border:1px solid var(--line); background:#16161a; color:#fff; padding:.72rem .9rem}
+    .codeChip{
+      display:inline-flex; align-items:center; gap:.4rem; padding:.28rem .6rem;
+      border:1px solid var(--chip-line); border-radius:.7rem; background:var(--chip-bg); color:#fff;
+      font-family: ui-monospace,Menlo,Consolas,monospace; letter-spacing:.03em; box-shadow:var(--shadow-2);
+      user-select:all;
+    }
+
+    /* --- Inputs / buttons --- */
+    input,select,button{
+      font-family:inherit; font-size:1rem; border-radius:var(--radius-md); border:1px solid var(--line);
+      background:#16161a; color:#fff; padding:.72rem .9rem;
+    }
     select{background:#121216}
-    button{cursor:pointer; font-weight:700; color:#111; border:none; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 10px 28px rgba(180,180,180,.25); transition:transform .15s ease, box-shadow .15s ease}
-    button:hover{transform:translateY(-2px)} button:disabled{opacity:.5; cursor:not-allowed}
+    button{
+      cursor:pointer; font-weight:700; color:#111; border:none;
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+      box-shadow:0 10px 28px rgba(180,180,180,.25);
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    button:hover{transform:translateY(-2px)}
+    button:disabled{opacity:.5; cursor:not-allowed}
+
+    /* --- Cards & rows --- */
     .card{background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius-xl); padding:16px; box-shadow:var(--shadow-1); backdrop-filter:blur(12px); display:flex; flex-direction:column; gap:var(--gap)}
-    .row{display:flex; gap:10px; align-items:center} .row>*{flex:1} .hidden{display:none!important}
-    .startGrid{display:grid; gap:12px; grid-template-columns:1fr} @media (min-width:720px){.startGrid{grid-template-columns:1fr 1fr}} .full{grid-column:1/-1}
+    .row{display:flex; gap:10px; align-items:center}
+    /* IMPORTANT: only stretch inside explicit "buttons" rows */
+    .row.buttons > * { flex: 1; }
+    /* Join row: input grows, button keeps natural size */
+    #joinArea input { flex: 1 }
+    #joinArea button { flex: 0 0 auto }
+
+    .hidden{display:none!important}
+    .startGrid{display:grid; gap:12px; grid-template-columns:1fr}
+    @media (min-width:720px){ .startGrid{grid-template-columns:1fr 1fr} }
+    .full{grid-column:1 / -1}
+
+    /* --- Lobby strip --- */
     #lobbyBar{background:rgba(0,0,0,.12); border:1px solid var(--line); border-radius:var(--radius-lg); padding:8px; display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap}
-    .lobbyItem{display:flex; align-items:center; gap:8px} .badge{font-size:.75rem; padding:.08rem .4rem; border:1px solid var(--line); border-radius:.5rem; color:#ddd; background:rgba(255,255,255,.05)}
-    .dot{width:10px; height:10px; border-radius:999px; display:inline-block} .online{background:#22c55e}.offline{background:#ef4444} #lobbyMsg{color:var(--text-dim); font-size:.9rem}
+    .lobbyItem{display:flex; align-items:center; gap:8px}
+    .badge{font-size:.75rem; padding:.08rem .4rem; border:1px solid var(--line); border-radius:.5rem; color:#ddd; background:rgba(255,255,255,.05)}
+    .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+    .online{background:#22c55e}.offline{background:#ef4444}
+    #lobbyMsg{color:var(--text-dim); font-size:.9rem}
+
+    /* --- HUD & game grid --- */
     #gameMain{display:flex; flex-direction:column; gap:10px}
     .hud{display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; color:var(--muted); font-weight:600; font-size:.95rem}
     .hud .seg{display:flex; gap:.5rem; align-items:center; padding:.25rem .6rem; border:1px solid var(--line); border-radius:.6rem; background:rgba(255,255,255,.04)}
@@ -61,16 +150,29 @@
     .leftCol{display:flex; flex-direction:column; gap:12px}
     #hangman{width:100%; background:#0f0f13; border:1px solid var(--line); border-radius:var(--radius-lg); max-height:44dvh; min-height:280px}
     #word{text-align:center; letter-spacing:.25em; font-size:1.4rem; margin-top:4px}
+
+    /* Letters grid as keycaps */
     #letters{display:grid; gap:10px; margin:10px 0; grid-template-columns:repeat(12,1fr)}
     @media (max-width:959px){#letters{grid-template-columns:repeat(8,1fr)}}
     @media (max-width:600px){#letters{grid-template-columns:repeat(7,1fr); margin-bottom:40px}}
     @media (max-width:420px){#letters{grid-template-columns:repeat(6,1fr)}}
     .key{font-weight:800; background:linear-gradient(180deg,#2a2a30,#15151a); border:1px solid #3a3a45; border-bottom:2px solid #0f0f13; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05); transition:transform .08s ease, box-shadow .12s ease, filter .12s ease; outline:none}
-    .key:hover:not(:disabled){transform:translateY(-2px) scale(1.02)} .key:active:not(:disabled){transform:translateY(1px) scale(.995); filter:brightness(1.05)} .key:disabled{opacity:.52; filter:saturate(.5) contrast(.9)} .key:focus-visible{box-shadow:0 0 0 2px rgba(255,255,255,.3), 0 0 0 4px rgba(130,130,140,.4)}
+    .key:hover:not(:disabled){transform:translateY(-2px) scale(1.02)}
+    .key:active:not(:disabled){transform:translateY(1px) scale(.995); filter:brightness(1.05)}
+    .key:disabled{opacity:.52; filter:saturate(.5) contrast(.9)}
+    .key:focus-visible{box-shadow:0 0 0 2px rgba(255,255,255,.3), 0 0 0 4px rgba(130,130,140,.4)}
+
+    /* Timer */
     #timerBar{width:100%; height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none}
     #timerFill{height:100%; width:0; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s, filter .2s}
-    .pulse{animation:pulse .8s ease-in-out infinite}@keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
-    .shake{animation:shake .28s ease}@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+    .pulse{animation:pulse .8s ease-in-out infinite}
+    @keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
+
+    /* Anim */
+    .shake{animation:shake .28s ease}
+    @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+
+    /* Right column */
     .rightCol{display:flex; flex-direction:column; gap:12px}
     #chatWrap{border:1px solid var(--line); border-radius:var(--radius-lg); background:rgba(255,255,255,.05); padding:10px; display:flex; flex-direction:column; gap:8px; min-height:280px}
     #chatList{flex:1; max-height:36dvh; overflow-y:auto; display:flex; flex-direction:column; gap:6px}
@@ -78,25 +180,37 @@
     .chatMeta{font-size:.75rem; color:var(--text-dim); margin-top:2px}
     .fadeout{opacity:0; transition:opacity .6s}
     #actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+
+    /* Result overlay */
     .overlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:50}
-    .overlay.show{display:flex; animation:fadeIn .18s ease}@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .overlay.show{display:flex; animation:fadeIn .18s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
     .resultCard{width:min(520px,95vw); background:rgba(24,24,28,.98); border:1px solid #32323a; border-radius:16px; padding:18px; box-shadow:0 16px 38px rgba(0,0,0,.58)}
     .resultTitle{margin:0 0 6px; font-size:1.3rem; font-weight:700}
     .resultWord{font-family:ui-monospace,Menlo,Consolas,monospace; letter-spacing:.06em; font-size:1.2rem; margin:8px 0 14px}
     .actionsRow{display:flex; gap:10px; justify-content:flex-end}
+
+    /* Toasts */
     .toastWrap{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:60}
     .toast{background:rgba(20,20,24,.92); color:#fff; padding:.6rem .9rem; border:1px solid #303038; border-radius:10px; transform:translateY(12px); opacity:0; transition:all .18s ease; box-shadow:0 10px 22px rgba(0,0,0,.45)}
     .toast.in{transform:none; opacity:1}
   </style>
 </head>
 <body>
+  <!-- 4K-ready image background -->
+  <div class="bgImage" id="bgImage" aria-hidden="true"></div>
+
+  <!-- Optional particles + vignette -->
   <div class="bg">
     <canvas id="bgParticles" aria-hidden="true"></canvas>
     <div id="bgVignette" aria-hidden="true"></div>
   </div>
+
+  <!-- Intro -->
   <div class="stinger" id="stinger" aria-hidden="true"><div class="logo"></div></div>
 
   <div class="shell" id="shell">
+    <!-- Top bar -->
     <div class="topbar">
       <div class="brand"><div class="cube" aria-hidden="true"></div><h1 class="title" id="appTitle">HÄNGA GUBBE</h1></div>
       <div class="topbar-right">
@@ -107,14 +221,25 @@
       </div>
     </div>
 
+    <!-- Start -->
     <div id="start" class="card" role="region" aria-label="Start">
       <div class="startGrid">
-        <div><label for="playerName" id="nameLabel">Ditt namn</label><input id="playerName" maxlength="24" autocomplete="name"/></div>
-        <div class="row full"><button id="createBtn">🆕 Skapa spel</button><button id="joinBtn">🔗 Gå med i spel</button></div>
-        <div id="joinArea" class="row hidden full"><input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10" autocomplete="off"/><button id="joinGo">Gå med</button></div>
+        <div>
+          <label for="playerName" id="nameLabel">Ditt namn</label>
+          <input id="playerName" maxlength="24" autocomplete="name"/>
+        </div>
+        <div class="row buttons full">
+          <button id="createBtn">🆕 Skapa spel</button>
+          <button id="joinBtn">🔗 Gå med i spel</button>
+        </div>
+        <div id="joinArea" class="row hidden full">
+          <input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10" autocomplete="off"/>
+          <button id="joinGo">Gå med</button>
+        </div>
       </div>
     </div>
 
+    <!-- Game -->
     <div id="game" class="card hidden" role="region" aria-label="Game">
       <div id="lobbyBar">
         <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span> <span id="badgeHost" class="badge hidden">Chooser</span></div>
@@ -122,6 +247,7 @@
         <div id="lobbyMsg" class="lobbyItem">—</div>
       </div>
 
+      <!-- HUD -->
       <div class="hud">
         <div class="seg">🧑 <span id="scoreHost">0</span></div>
         <div class="seg">👤 <span id="scoreGuest">0</span></div>
@@ -132,6 +258,7 @@
 
       <div id="gameMain">
         <div class="gameGrid">
+          <!-- Left -->
           <div class="leftCol">
             <canvas id="hangman" aria-label="Hangman board"></canvas>
             <div id="word" aria-live="polite">_</div>
@@ -150,6 +277,7 @@
             <div id="letters" role="grid" aria-label="Letters"></div>
           </div>
 
+          <!-- Right -->
           <div class="rightCol">
             <div id="chatWrap" aria-label="Chat">
               <div id="chatList"></div>
@@ -161,6 +289,7 @@
       </div>
     </div>
 
+    <!-- Result overlay -->
     <div class="overlay" id="resultOverlay" aria-modal="true" role="dialog">
       <div class="resultCard">
         <h3 class="resultTitle" id="resultTitle">—</h3>
@@ -170,13 +299,14 @@
       </div>
     </div>
 
-    <div class="modal" id="settingsModal" aria-modal="true" role="dialog">
-      <div class="modalCard">
-        <div class="modalHeader"><h3 id="settingsTitle">Settings</h3><button id="settingsClose">✖</button></div>
-        <div class="settingRow"><div>Language</div><select id="langInSettings"><option value="sv">Svenska</option><option value="en">English</option></select></div>
-        <div class="settingRow"><div>Reduced Motion</div><input type="checkbox" id="reducedMotion"></div>
-        <div class="settingRow"><div>Particle Quality</div><select id="particleQuality"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
-        <div class="settingRow"><div>Color Mode</div><select id="colorMode"><option value="mono">Mono</option><option value="monoStrong">Mono (High Contrast)</option></select></div>
+    <!-- Settings -->
+    <div class="overlay hidden" id="settingsModal" aria-modal="true" role="dialog" style="align-items:flex-start; padding-top:16px">
+      <div class="card" style="width:min(560px,95vw)">
+        <div style="display:flex; justify-content:space-between; align-items:center"><h3 id="settingsTitle" style="margin:0">Settings</h3><button id="settingsClose">✖</button></div>
+        <div class="row"><label style="flex:1">Language</label><select id="langInSettings" style="flex:2"><option value="sv">Svenska</option><option value="en">English</option></select></div>
+        <div class="row"><label style="flex:1">Reduced Motion</label><input type="checkbox" id="reducedMotion" style="flex:2; width:auto"></div>
+        <div class="row"><label style="flex:1">Particle Quality</label><select id="particleQuality" style="flex:2"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+        <div class="row"><label style="flex:1">Color Mode</label><select id="colorMode" style="flex:2"><option value="mono">Mono</option><option value="monoStrong">Mono (High Contrast)</option></select></div>
       </div>
     </div>
 
@@ -184,76 +314,158 @@
   </div>
 
   <script>
-    /* Firebase */
+    /* ---------------- Firebase ---------------- */
     const firebaseConfig={apiKey:"AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",authDomain:"hangman-6a99e.firebaseapp.com",databaseURL:"https://hangman-6a99e-default-rtdb.europe-west1.firebasedatabase.app",projectId:"hangman-6a99e",storageBucket:"hangman-6a99e.firebasestorage.app",messagingSenderId:"992689481911",appId:"1:992689481911:web:6461e931ba4d96879ec532"};firebase.initializeApp(firebaseConfig);const db=firebase.database();
 
-    /* DOM */
-    const stinger=document.getElementById('stinger'), bgCanvas=document.getElementById('bgParticles'), bgCtx=bgCanvas.getContext('2d');
-    const appTitle=document.getElementById('appTitle'), shareEl=document.getElementById('share'), langGlobal=document.getElementById('langGlobal'), backBtnTop=document.getElementById('backBtnTop');
-    const openSettings=document.getElementById('openSettings'), settingsModal=document.getElementById('settingsModal'), settingsClose=document.getElementById('settingsClose'), langInSettings=document.getElementById('langInSettings'), reducedMotionChk=document.getElementById('reducedMotion'), particleQualitySel=document.getElementById('particleQuality'), colorModeSel=document.getElementById('colorMode');
-    const startDiv=document.getElementById('start'), nameLabel=document.getElementById('nameLabel'), nameInput=document.getElementById('playerName'), createBtn=document.getElementById('createBtn'), joinBtn=document.getElementById('joinBtn'), joinArea=document.getElementById('joinArea'), joinCodeInput=document.getElementById('joinCode'), joinGo=document.getElementById('joinGo');
-    const gameDiv=document.getElementById('game'), lobbyMsg=document.getElementById('lobbyMsg'), nameHost=document.getElementById('nameHost'), nameGuest=document.getElementById('nameGuest'), dotHost=document.getElementById('dotHost'), dotGuest=document.getElementById('dotGuest'), badgeHost=document.getElementById('badgeHost'), badgeGuest=document.getElementById('badgeGuest');
-    const scoreHostEl=document.getElementById('scoreHost'), scoreGuestEl=document.getElementById('scoreGuest'), roundLabel=document.getElementById('roundLabel'), turnIndicator=document.getElementById('turnIndicator'), timerSeg=document.getElementById('timerSeg'), timerSegText=document.getElementById('timerSegText');
-    const canvas=document.getElementById('hangman'), ctx=canvas.getContext('2d'), wordEl=document.getElementById('word'), lettersEl=document.getElementById('letters'), chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText'), chatSend=document.getElementById('chatSend'), newWordBtn=document.getElementById('newWordBtn'), backBtn=document.getElementById('backBtn');
-    const timerOpen=document.getElementById('timerOpen'), timerConfig=document.getElementById('timerConfig'), timerInput=document.getElementById('timerInput'), timerConfirm=document.getElementById('timerConfirm'), timerCancel=document.getElementById('timerCancel'), timerOff=document.getElementById('timerOff'), timerBar=document.getElementById('timerBar'), timerFill=document.getElementById('timerFill');
-    const resultOverlay=document.getElementById('resultOverlay'), resultTitle=document.getElementById('resultTitle'), resultSubtitle=document.getElementById('resultSubtitle'), resultWordEl=document.getElementById('resultWord'), resultClose=document.getElementById('resultClose'), resultPick=document.getElementById('resultPick');
+    /* ---------------- DOM ---------------- */
+    const stinger=document.getElementById('stinger');
+    const bgCanvas=document.getElementById('bgParticles'), bgCtx=bgCanvas.getContext('2d');
+
+    const appTitle=document.getElementById('appTitle');
+    const shareEl=document.getElementById('share');
+    const langGlobal=document.getElementById('langGlobal');
+    const backBtnTop=document.getElementById('backBtnTop');
+    const openSettings=document.getElementById('openSettings');
+    const settingsModal=document.getElementById('settingsModal');
+    const settingsClose=document.getElementById('settingsClose');
+    const langInSettings=document.getElementById('langInSettings');
+    const reducedMotionChk=document.getElementById('reducedMotion');
+    const particleQualitySel=document.getElementById('particleQuality');
+    const colorModeSel=document.getElementById('colorMode');
+
+    const startDiv=document.getElementById('start');
+    const nameLabel=document.getElementById('nameLabel');
+    const nameInput=document.getElementById('playerName');
+    const createBtn=document.getElementById('createBtn');
+    const joinBtn=document.getElementById('joinBtn');
+    const joinArea=document.getElementById('joinArea');
+    const joinCodeInput=document.getElementById('joinCode');
+    const joinGo=document.getElementById('joinGo');
+
+    const gameDiv=document.getElementById('game');
+    const lobbyMsg=document.getElementById('lobbyMsg');
+    const nameHost=document.getElementById('nameHost');
+    theNameGuest=document.getElementById('nameGuest'); // renamed variable to avoid clashes
+    const nameGuest=theNameGuest;
+    const dotHost=document.getElementById('dotHost');
+    const dotGuest=document.getElementById('dotGuest');
+    const badgeHost=document.getElementById('badgeHost');
+    const badgeGuest=document.getElementById('badgeGuest');
+
+    const scoreHostEl=document.getElementById('scoreHost');
+    const scoreGuestEl=document.getElementById('scoreGuest');
+    const roundLabel=document.getElementById('roundLabel');
+    const turnIndicator=document.getElementById('turnIndicator');
+    const timerSeg=document.getElementById('timerSeg');
+    const timerSegText=document.getElementById('timerSegText');
+
+    const canvas=document.getElementById('hangman'), ctx=canvas.getContext('2d');
+    const wordEl=document.getElementById('word');
+    const lettersEl=document.getElementById('letters');
+    const chatList=document.getElementById('chatList');
+    const chatText=document.getElementById('chatText');
+    const chatSend=document.getElementById('chatSend');
+    const newWordBtn=document.getElementById('newWordBtn');
+    const backBtn=document.getElementById('backBtn');
+
+    const timerOpen=document.getElementById('timerOpen');
+    const timerConfig=document.getElementById('timerConfig');
+    const timerInput=document.getElementById('timerInput');
+    const timerConfirm=document.getElementById('timerConfirm');
+    const timerCancel=document.getElementById('timerCancel');
+    const timerOff=document.getElementById('timerOff');
+    const timerBar=document.getElementById('timerBar');
+    const timerFill=document.getElementById('timerFill');
+
+    const resultOverlay=document.getElementById('resultOverlay');
+    const resultTitle=document.getElementById('resultTitle');
+    const resultSubtitle=document.getElementById('resultSubtitle');
+    const resultWordEl=document.getElementById('resultWord');
+    const resultClose=document.getElementById('resultClose');
+    const resultPick=document.getElementById('resultPick');
+
     const toastWrap=document.getElementById('toastWrap');
 
-    /* State */
+    /* ---------------- State ---------------- */
     const params=new URLSearchParams(location.search), deepLinkGame=params.get('game');
     const letters=[..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
     let gameId="", isHost=false, nickname="", lang=localStorage.getItem('lang')||'sv';
-    let timerSeconds=0, roundStartMs=0, rafTimer=null, currentWrong=0, lastUpdateKey="", lastTurnCached=null, awaitingWordBy=null;
-    let reducedMotion=JSON.parse(localStorage.getItem('reducedMotion')||'false'), particleQuality=localStorage.getItem('particleQuality')||'high', colorMode=localStorage.getItem('colorMode')||'mono';
-    let lastPlayers={}, lastPresence={}; // <-- used to re-translate lobby on language change
+    let timerSeconds=0, roundStartMs=0, rafTimer=null, currentWrong=0, lastUpdateKey="", lastTurnCached=null;
+    let awaitingWordBy=null;
+    let reducedMotion=JSON.parse(localStorage.getItem('reducedMotion')||'false');
+    let particleQuality=localStorage.getItem('particleQuality')||'high';
+    let colorMode=localStorage.getItem('colorMode')||'mono';
+    let lastPlayers={}, lastPresence={};
 
     const T={
       sv:{appTitle:"HÄNGA GUBBE",nameLabel:"Ditt namn",enterWord:"Ange ett ord att spela med:",notFound:"Spelet hittades inte.",joinCodeMissing:"Ange spelkod.",share:"Spelkod:",loading:"Laddar spel…",yourTurn:"🎯 Din tur!",oppTurn:"⏳ Motståndarens tur…",timeRanOut:"⏰ Tiden tog slut!",hostWon:"🎉 Värden vann!",guestWon:"🎉 Gästen vann!",waiting:"⏳ Väntar på spelare…",bothIn:"🎮 Båda spelare anslutna!",chooseWordCta:"✍️ Välj nytt ord",back:"⬅️ Tillbaka",create:"🆕 Skapa spel",join:"🔗 Gå med i spel",joinGo:"Gå med",joinPlaceholder:"Kod (t.ex. ab123)",chatPlaceholder:"Skriv ett meddelande...",chatSend:"Skicka",timerOpen:"⏱ Ställ in timer",timerOff:"🕒 Av",modalPlaceholder:"Ditt namn",chooserOnly:"Bara ordgivaren kan starta nästa runda.",roundNotOver:"Rundan är inte slut än.",round:"Runda",resultWon:"Du vann!",resultOppWon:"Motståndaren vann",roleChooser:"Ordgivare",roleGuesser:"Gissare",ok:"OK"},
       en:{appTitle:"HANGMAN",nameLabel:"Your name",enterWord:"Enter a word to start:",notFound:"Game not found.",joinCodeMissing:"Enter a game code.",share:"Game code:",loading:"Loading game…",yourTurn:"🎯 Your turn!",oppTurn:"⏳ Opponent's turn…",timeRanOut:"⏰ Time ran out!",hostWon:"🎉 Host won!",guestWon:"🎉 Guest won!",waiting:"⏳ Waiting for player…",bothIn:"🎮 Both players connected!",chooseWordCta:"✍️ Pick new word",back:"⬅️ Back",create:"🆕 Create game",join:"🔗 Join game",joinGo:"Join",joinPlaceholder:"Code (e.g. ab123)",chatPlaceholder:"Type a message...",chatSend:"Send",timerOpen:"⏱ Set timer",timerOff:"🕒 Off",modalPlaceholder:"Your name",chooserOnly:"Only the word chooser can start the next round.",roundNotOver:"Round not over.",round:"Round",resultWon:"You won!",resultOppWon:"Opponent won",roleChooser:"Chooser",roleGuesser:"Guesser",ok:"OK"}
     };
 
-    /* Utils */
+    /* ---------------- Utils ---------------- */
     const esc=s=>(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
     const gameCode=()=> (gameId||"").replace(/^hangman-/,"");
     const toast=(msg)=>{const t=document.createElement('div');t.className='toast';t.textContent=msg;toastWrap.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>t.classList.remove('in'),1800);setTimeout(()=>t.remove(),2000)};
 
-    /* Background particles */
+    /* ---------------- Background particles (optional) ---------------- */
     function sizeBg(){bgCanvas.width=innerWidth; bgCanvas.height=innerHeight}
     let particles=[];
     function initParticles(){sizeBg(); const count=particleQuality==='high'?120:particleQuality==='medium'?70:35; particles=new Array(count).fill(0).map(()=>({x:Math.random()*bgCanvas.width,y:Math.random()*bgCanvas.height,r:Math.random()*1.6+0.4,vx:(Math.random()-.5)*0.25,vy:(Math.random()-.5)*0.25,a:Math.random()*0.5+0.2}))}
-    function tickParticles(){if(reducedMotion){bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);return requestAnimationFrame(tickParticles)} bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height); bgCtx.save(); bgCtx.globalCompositeOperation='lighter'; for(const p of particles){p.x+=p.vx;p.y+=p.vy; if(p.x<0||p.x>bgCanvas.width)p.vx*=-1; if(p.y<0||p.y>bgCanvas.height)p.vy*=-1; bgCtx.fillStyle=`rgba(200,200,210,${p.a})`; bgCtx.beginPath(); bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2); bgCtx.fill()} bgCtx.restore(); requestAnimationFrame(tickParticles)}
-    window.addEventListener('resize',()=>{sizeBg(); initParticles()}); document.addEventListener('mousemove',(e)=>{const dx=(e.clientX/innerWidth-.5)*2,dy=(e.clientY/innerHeight-.5)*2; bgCanvas.style.transform=`translate(${dx*6}px, ${dy*6}px)`},{passive:true});
+    function tickParticles(){ if(reducedMotion){bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height); return requestAnimationFrame(tickParticles)}
+      bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+      bgCtx.save(); bgCtx.globalCompositeOperation='lighter';
+      for(const p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>bgCanvas.width)p.vx*=-1;if(p.y<0||p.y>bgCanvas.height)p.vy*=-1; bgCtx.fillStyle=`rgba(200,200,210,${p.a})`; bgCtx.beginPath(); bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2); bgCtx.fill()}
+      bgCtx.restore();
+      requestAnimationFrame(tickParticles)
+    }
+    window.addEventListener('resize',()=>{sizeBg(); initParticles()});
+    document.addEventListener('mousemove',(e)=>{const dx=(e.clientX/innerWidth-.5)*2,dy=(e.clientY/innerHeight-.5)*2; bgCanvas.style.transform=`translate(${dx*6}px, ${dy*6}px)`},{passive:true});
 
-    /* i18n */
+    /* ---------------- i18n ---------------- */
     function updateShareText(){const L=T[lang]; const code=gameCode()||"—"; shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>`; backBtnTop.classList.toggle('hidden', !gameId)}
     function applyLang(){
-      const L=T[lang]; document.documentElement.lang=(lang==='sv'?'sv':'en'); appTitle.textContent=L.appTitle;
-      nameLabel.textContent=L.nameLabel; createBtn.textContent=L.create; joinBtn.textContent=L.join; joinGo.textContent=L.joinGo; joinCodeInput.placeholder=L.joinPlaceholder;
-      newWordBtn.textContent=L.chooseWordCta; backBtn.textContent=L.back; chatText.placeholder=L.chatPlaceholder; chatSend.textContent=L.chatSend; timerOpen.textContent=L.timerOpen; timerOff.textContent=L.timerOff; resultClose.textContent=L.ok; document.getElementById('settingsTitle').textContent=(lang==='sv')?'Inställningar':'Settings';
-      updateShareText(); // <- updates code chip
-      // Re-translate lobby status using the latest players/presence snapshot:
-      updateLobby(lastPlayers, lastPresence);
+      const L=T[lang];
+      document.documentElement.lang=(lang==='sv'?'sv':'en');
+      appTitle.textContent=L.appTitle;
+      nameLabel.textContent=L.nameLabel;
+      createBtn.textContent=L.create;
+      joinBtn.textContent=L.join;
+      joinGo.textContent=L.joinGo;
+      joinCodeInput.placeholder=L.joinPlaceholder;
+      newWordBtn.textContent=L.chooseWordCta;
+      backBtn.textContent=L.back;
+      chatText.placeholder=L.chatPlaceholder;
+      chatSend.textContent=L.chatSend;
+      timerOpen.textContent=L.timerOpen;
+      timerOff.textContent=L.timerOff;
+      resultClose.textContent=L.ok;
+      document.getElementById('settingsTitle').textContent=(lang==='sv')?'Inställningar':'Settings';
+      updateShareText();
+      // re-render lobby status in the chosen language
+      updateLobby(lastPlayers,lastPresence);
       if(lastTurnCached) setTurn(lastTurnCached);
       updateRoleBadges();
       updateRoundLabel();
     }
-    langGlobal.value=lang; langGlobal.onchange=()=>{lang=langGlobal.value; localStorage.setItem('lang',lang); langInSettings.value=lang; applyLang()};
+    langGlobal.value=lang;
+    langGlobal.onchange=()=>{lang=langGlobal.value; localStorage.setItem('lang',lang); langInSettings.value=lang; applyLang()};
 
-    /* Settings modal */
-    openSettings.onclick=()=>settingsModal.classList.add('show'); settingsClose.onclick=()=>settingsModal.classList.remove('show');
+    /* ---------------- Settings modal ---------------- */
+    openSettings.onclick=()=>settingsModal.classList.remove('hidden');
+    settingsClose.onclick=()=>settingsModal.classList.add('hidden');
     langInSettings.onchange=()=>{langGlobal.value=langInSettings.value; langGlobal.onchange()};
     reducedMotionChk.checked=reducedMotion; reducedMotionChk.onchange=()=>{reducedMotion=reducedMotionChk.checked; localStorage.setItem('reducedMotion',JSON.stringify(reducedMotion))};
     particleQualitySel.value=particleQuality; particleQualitySel.onchange=()=>{particleQuality=particleQualitySel.value; localStorage.setItem('particleQuality',particleQuality); initParticles()};
     colorModeSel.value=colorMode; colorModeSel.onchange=()=>{colorMode=colorModeSel.value; localStorage.setItem('colorMode',colorMode)};
 
-    /* Presence / Lobby */
+    /* ---------------- Lobby / presence ---------------- */
     function updateLobby(p={},pr={}){
-      lastPlayers=p; lastPresence=pr; // keep snapshots for language switch
+      lastPlayers=p; lastPresence=pr;
       const L=T[lang];
       nameHost.textContent=p.host||"—";
       const hasGuest=!!p.guest;
       nameGuest.textContent=hasGuest? p.guest : L.waiting;
-      nameGuest.dataset.hasGuest=hasGuest?"1":"0";
+      nameGuest.dataset.hasGuest = hasGuest ? "1":"0";
       const h=!!pr.host,g=!!pr.guest;
       dotHost.classList.toggle('online',h); dotHost.classList.toggle('offline',!h);
       dotGuest.classList.toggle('online',g); dotGuest.classList.toggle('offline',!g);
@@ -261,49 +473,93 @@
     }
     function setupPresence(role){firebase.database().ref(".info/connected").on("value",s=>{if(s.val()){const r=db.ref(`games/${gameId}/presence/${role}`); r.set(!0); r.onDisconnect().remove()}})}
 
-    /* Canvas: refined stick figure */
-    function resizeCanvas(){const w=Math.min(980,Math.floor(document.body.clientWidth-64)); const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.72)-180)); canvas.width=Math.max(280,Math.min(w,980)); canvas.height=Math.max(280,h); drawAll(currentWrong); canvas.style.maxWidth="100%"; canvas.style.height="auto"}
+    /* ---------------- Canvas: clean gallows & figure ---------------- */
+    function resizeCanvas(){
+      const w=Math.min(980,Math.floor(document.body.clientWidth-64));
+      const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.72)-180));
+      canvas.width=Math.max(280,Math.min(w,980));
+      canvas.height=Math.max(280,h);
+      drawAll(currentWrong);
+      canvas.style.maxWidth="100%";
+      canvas.style.height="auto";
+    }
     window.addEventListener('resize',()=>setTimeout(resizeCanvas,60));
-    function strokeGrad(){const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height); const s=getComputedStyle(document.documentElement); g.addColorStop(0,s.getPropertyValue('--grad-a').trim()); g.addColorStop(.5,s.getPropertyValue('--grad-b').trim()); g.addColorStop(1,s.getPropertyValue('--grad-a').trim()); return g}
+
+    function strokeGrad(){
+      const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+      const s=getComputedStyle(document.documentElement);
+      g.addColorStop(0,s.getPropertyValue('--grad-a').trim());
+      g.addColorStop(.5,s.getPropertyValue('--grad-b').trim());
+      g.addColorStop(1,s.getPropertyValue('--grad-a').trim());
+      return g;
+    }
+
     function drawAll(w){
       const cw=canvas.width,ch=canvas.height,sX=cw/200,sY=ch/250,scale=Math.min(sX,sY);
       ctx.clearRect(0,0,cw,ch);
-      ctx.lineWidth=3*scale; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=strokeGrad();
 
-      // Gallows (clean proportions)
+      // Gallows: square ends, crisp lines (0.5px alignment)
+      ctx.save();
+      ctx.lineWidth = 4*scale;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
+      ctx.strokeStyle = strokeGrad();
+      const px=v=>Math.round(v)+.5;
+
       ctx.beginPath();
-      ctx.moveTo(20*sX,235*sY); ctx.lineTo(180*sX,235*sY);           // base
-      ctx.moveTo(50*sX,235*sY); ctx.lineTo(50*sX,25*sY);              // post
-      ctx.lineTo(130*sX,25*sY); ctx.lineTo(130*sX,50*sY);             // beam + drop
+      ctx.moveTo(px(20*sX), px(235*sY)); ctx.lineTo(px(180*sX), px(235*sY)); // base
+      ctx.moveTo(px(50*sX), px(235*sY)); ctx.lineTo(px(50*sX), px(25*sY));   // post
+      ctx.lineTo(px(130*sX), px(25*sY)); ctx.lineTo(px(130*sX), px(50*sY));  // beam + drop
       ctx.stroke();
+      ctx.restore();
 
-      // Figure dimensions
+      // Figure: rounded ends
+      ctx.save();
+      ctx.lineWidth = 3*scale;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = strokeGrad();
+
       const headR=16*scale, headX=130*sX, headY=70*sY;
       const torsoTopY=90*sY, torsoBotY=155*sY;
       const armY=112*sY, armSpan=32*sX;
       const legTopY=155*sY, legSpan=26*sX, legLen=42*sY;
 
-      // 1) Head
-      if(w>0){ctx.beginPath(); ctx.arc(headX,headY,headR,0,Math.PI*2); ctx.stroke()}
-      // 2) Torso
-      if(w>1){ctx.beginPath(); ctx.moveTo(headX,torsoTopY); ctx.lineTo(headX,torsoBotY); ctx.stroke()}
-      // 3) Left arm
-      if(w>2){ctx.beginPath(); ctx.moveTo(headX,armY); ctx.lineTo(headX-armSpan,armY+18*sY); ctx.stroke()}
-      // 4) Right arm
-      if(w>3){ctx.beginPath(); ctx.moveTo(headX,armY); ctx.lineTo(headX+armSpan,armY+18*sY); ctx.stroke()}
-      // 5) Left leg
-      if(w>4){ctx.beginPath(); ctx.moveTo(headX,legTopY); ctx.lineTo(headX-legSpan,legTopY+legLen); ctx.stroke()}
-      // 6) Right leg
-      if(w>5){ctx.beginPath(); ctx.moveTo(headX,legTopY); ctx.lineTo(headX+legSpan,legTopY+legLen); ctx.stroke()}
+      if(w>0){ ctx.beginPath(); ctx.arc(headX, headY, headR, 0, Math.PI*2); ctx.stroke() }
+      if(w>1){ ctx.beginPath(); ctx.moveTo(headX,torsoTopY); ctx.lineTo(headX,torsoBotY); ctx.stroke() }
+      if(w>2){ ctx.beginPath(); ctx.moveTo(headX,armY); ctx.lineTo(headX-armSpan,armY+18*sY); ctx.stroke() }
+      if(w>3){ ctx.beginPath(); ctx.moveTo(headX,armY); ctx.lineTo(headX+armSpan,armY+18*sY); ctx.stroke() }
+      if(w>4){ ctx.beginPath(); ctx.moveTo(headX,legTopY); ctx.lineTo(headX-legSpan,legTopY+legLen); ctx.stroke() }
+      if(w>5){ ctx.beginPath(); ctx.moveTo(headX,legTopY); ctx.lineTo(headX+legSpan,legTopY+legLen); ctx.stroke() }
+
+      ctx.restore();
     }
+
     function setWordDisplay(word,guesses){wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" ")}
 
-    /* Letters + keyboard nav */
-    function buildLetters(){lettersEl.innerHTML=""; letters.forEach((ch,idx)=>{const b=document.createElement('button'); b.textContent=ch; b.className='key'; b.setAttribute('role','gridcell'); b.dataset.index=idx; b.onclick=onGuess; lettersEl.appendChild(b)})}
+    /* ---------------- Letters (UI + keyboard nav) ---------------- */
+    function buildLetters(){
+      lettersEl.innerHTML="";
+      letters.forEach((ch,idx)=>{
+        const b=document.createElement('button');
+        b.textContent=ch; b.className='key'; b.setAttribute('role','gridcell'); b.dataset.index=idx;
+        b.onclick=onGuess; lettersEl.appendChild(b);
+      });
+    }
     function focusKey(i){const btn=lettersEl.querySelector(`button[data-index="${i}"]`); if(btn && !btn.disabled) btn.focus()}
-    lettersEl.addEventListener('keydown',e=>{const cols=getComputedStyle(lettersEl).gridTemplateColumns.split(' ').length, total=letters.length, active=document.activeElement, cur=active&&active.dataset?parseInt(active.dataset.index,10):0; if(isNaN(cur))return; let nxt=cur; if(e.key==='ArrowRight')nxt=(cur+1)%total; else if(e.key==='ArrowLeft')nxt=(cur-1+total)%total; else if(e.key==='ArrowDown')nxt=(cur+cols)%total; else if(e.key==='ArrowUp')nxt=(cur-cols+total)%total; else if(e.key===' '||e.key==='Enter'){active.click();return}else return; e.preventDefault(); focusKey(nxt)});
+    lettersEl.addEventListener('keydown',(e)=>{
+      const cols=getComputedStyle(lettersEl).gridTemplateColumns.split(' ').length, total=letters.length;
+      const active=document.activeElement, cur=active&&active.dataset?parseInt(active.dataset.index,10):0;
+      if(isNaN(cur))return; let nxt=cur;
+      if(e.key==='ArrowRight')nxt=(cur+1)%total;
+      else if(e.key==='ArrowLeft')nxt=(cur-1+total)%total;
+      else if(e.key==='ArrowDown')nxt=(cur+cols)%total;
+      else if(e.key==='ArrowUp')nxt=(cur-cols+total)%total;
+      else if(e.key===' '||e.key==='Enter'){active.click();return}else return;
+      e.preventDefault(); focusKey(nxt);
+    });
 
-    /* Timer */
+    /* ---------------- Timer ---------------- */
     function stopTimerLoop(){if(rafTimer)cancelAnimationFrame(rafTimer); rafTimer=null}
     function timerLoop(){
       stopTimerLoop();
@@ -326,21 +582,21 @@
       }; rafTimer=requestAnimationFrame(tick)
     }
 
-    /* Chat */
+    /* ---------------- Chat ---------------- */
     function pushChat(m){db.ref("games/"+gameId+"/chat").push({name:nickname,text:m,ts:Date.now()})}
     chatSend.onclick=()=>{const v=chatText.value.trim(); if(!v)return; chatText.value=""; pushChat(v)};
     chatText.onkeydown=e=>{if(e.key==='Enter')chatSend.click()};
     function addChat(o){const wrap=document.createElement('div'); wrap.className='chatMsg'; wrap.innerHTML=`<div><b>${esc(o.name||"??")}</b>: ${esc(o.text||"")}</div><div class="chatMeta">${new Date(o.ts||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`; chatList.appendChild(wrap); chatList.scrollTop=chatList.scrollHeight; setTimeout(()=>wrap.classList.add('fadeout'),15000); setTimeout(()=>wrap.remove(),16500)}
 
-    /* Turn / roles */
+    /* ---------------- Turn / roles ---------------- */
     function setTurn(turn){lastTurnCached=turn; const mine=isHost?'host':'guest'; const txt=(turn===mine)?((lang==='sv')?T.sv.yourTurn:T.en.yourTurn):((lang==='sv')?T.sv.oppTurn:T.en.oppTurn); turnIndicator.textContent=txt; turnBanner(txt)}
     function updateRoleBadges(){const L=T[lang]; badgeHost.classList.toggle('hidden', !(awaitingWordBy==='host')); badgeGuest.classList.toggle('hidden', !(awaitingWordBy==='guest')); badgeHost.textContent=awaitingWordBy==='host'?L.roleChooser:L.roleGuesser; badgeGuest.textContent=awaitingWordBy==='guest'?L.roleChooser:L.roleGuesser}
     function turnBanner(text){const r=document.createElement('div'); r.style.position='fixed'; r.style.left='50%'; r.style.top='14px'; r.style.transform='translateX(-50%) translateY(-20px)'; r.style.background='rgba(20,20,24,.95)'; r.style.color='#fff'; r.style.padding='.4rem .8rem'; r.style.border='1px solid #333'; r.style.borderRadius='10px'; r.style.boxShadow='0 10px 22px rgba(0,0,0,.45)'; r.style.zIndex='40'; r.textContent=text; document.body.appendChild(r); requestAnimationFrame(()=>r.style.transform='translateX(-50%) translateY(0)'); setTimeout(()=>{r.style.transition='transform .2s ease, opacity .2s ease'; r.style.opacity='0'; r.style.transform='translateX(-50%) translateY(-12px)'},900); setTimeout(()=>r.remove(),1150)}
 
-    /* Result overlay */
+    /* ---------------- Result overlay ---------------- */
     function showResultOverlay(word, winnerRole){const L=T[lang]; resultTitle.textContent=(winnerRole===(isHost?'host':'guest'))?L.resultWon:L.resultOppWon; resultSubtitle.textContent=`${L.round} ${getRoundNumber(true)}`; resultWordEl.textContent=word; resultOverlay.classList.add('show'); const mine=isHost?'host':'guest'; const amChooser=awaitingWordBy===mine; resultPick.classList.toggle('hidden', !awaitingWordBy); resultPick.disabled=!amChooser; resultPick.textContent=L.chooseWordCta; resultClose.onclick=()=>resultOverlay.classList.remove('show'); resultPick.onclick=()=>newWordBtn.click()}
 
-    /* Helpers */
+    /* ---------------- Helpers ---------------- */
     function updateLettersEnabled(enabled){lettersEl.querySelectorAll('button').forEach(b=>{if(b.dataset.used==='1'){b.disabled=true;return} b.disabled=!enabled})}
     function setAllInteractiveDisabled(disabled){updateLettersEnabled(!disabled); [timerOpen,timerConfirm,timerCancel,timerOff,timerInput].forEach(el=>{if(el)el.disabled=disabled})}
     function getRoundNumber(includeCurrent){const h=parseInt(scoreHostEl.textContent||'0',10), g=parseInt(scoreGuestEl.textContent||'0',10); const base=h+g; return includeCurrent?base+1:base}
@@ -348,27 +604,70 @@
     function showGame(){startDiv.classList.add('hidden'); gameDiv.classList.remove('hidden'); updateShareText(); resizeCanvas(); buildLetters()}
     function confirmLeave(){return confirm((lang==='sv')?'Är du säker på att du vill lämna och radera spelet?':'Are you sure you want to leave and delete the game?')}
     function leaveGame(){if(gameId)db.ref("games/"+gameId).remove(); location.href=location.pathname}
-
     backBtn.onclick=()=>{if(confirmLeave())leaveGame()}; backBtnTop.onclick=()=>{if(confirmLeave())leaveGame()};
 
-    /* Create / Join */
-    createBtn.onclick=async()=>{nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim(); if(!nickname){nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname)} const word=(prompt(T[lang].enterWord)||"").toUpperCase(); if(!/^[A-ZÅÄÖ]+$/.test(word))return alert("Endast bokstäver A–Ö!"); const id="hangman-"+Math.random().toString(36).substr(2,5); await db.ref("games/"+id).set({word,guesses:[],wrong:0,turn:"guest",over:false,players:{host:nickname},scores:{host:0,guest:0},settings:{timerSeconds:0},presence:{},roundStartMs:0,awaitingWordBy:null}); isHost=true; gameId=id; showGame(); setupPresence('host'); listenGame()};
+    /* ---------------- Create / Join ---------------- */
+    createBtn.onclick=async()=>{
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname) }
+      const word=(prompt(T[lang].enterWord)||"").toUpperCase();
+      if(!/^[A-ZÅÄÖ]+$/.test(word)) return alert("Endast bokstäver A–Ö!");
+      const id="hangman-"+Math.random().toString(36).substr(2,5);
+      await db.ref("games/"+id).set({word,guesses:[],wrong:0,turn:"guest",over:false,players:{host:nickname},scores:{host:0,guest:0},settings:{timerSeconds:0},presence:{},roundStartMs:0,awaitingWordBy:null});
+      isHost=true; gameId=id; showGame(); setupPresence('host'); listenGame();
+    };
     joinBtn.onclick=()=>joinArea.classList.remove('hidden');
-    joinGo.onclick=async()=>{const code=(joinCodeInput.value||"").trim(); if(!code)return alert(T[lang].joinCodeMissing); nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim(); if(!nickname){nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname)} const id="hangman-"+code; const snap=await db.ref("games/"+id).get(); if(!snap.exists())return alert(T[lang].notFound); await db.ref("games/"+id+"/players").update({guest:nickname}); isHost=false; gameId=id; showGame(); setupPresence('guest'); listenGame()};
-    (async function directJoin(){const deep=params.get('game'); if(!deep)return; nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim(); if(!nickname){nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname)} const snap=await db.ref("games/"+deep).get(); if(!snap.exists())return leaveGame(); const d=snap.val(); if(!d.players?.guest){await db.ref("games/"+deep+"/players").update({guest:nickname})} isHost=false; gameId=deep; showGame(); setupPresence('guest'); listenGame()})();
+    joinGo.onclick=async()=>{
+      const code=(joinCodeInput.value||"").trim(); if(!code) return alert(T[lang].joinCodeMissing);
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname) }
+      const id="hangman-"+code;
+      const snap=await db.ref("games/"+id).get();
+      if(!snap.exists()) return alert(T[lang].notFound);
+      await db.ref("games/"+id+"/players").update({guest:nickname});
+      isHost=false; gameId=id; showGame(); setupPresence('guest'); listenGame();
+    };
+    (async function directJoin(){
+      if(!deepLinkGame) return;
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt(T[lang].modalPlaceholder)||''; nickname=nickname.trim(); if(!nickname)return; localStorage.setItem('nickname',nickname) }
+      const snap=await db.ref("games/"+deepLinkGame).get();
+      if(!snap.exists()) return leaveGame();
+      const d=snap.val();
+      if(!d.players?.guest){ await db.ref("games/"+deepLinkGame+"/players").update({guest:nickname}) }
+      isHost=false; gameId=deepLinkGame; showGame(); setupPresence('guest'); listenGame();
+    })();
 
-    async function onGuess(){const ch=this.textContent; const snap=await db.ref("games/"+gameId).get(), d=snap.val(); if(!d||d.over||d.awaitingWordBy)return; const mine=isHost?'host':'guest'; if(d.turn!==mine)return; if((d.guesses||[]).includes(ch))return; let newGuesses=[...(d.guesses||[]),ch], newWrong=d.wrong||0, over=false, winner=null; const scores={...(d.scores||{host:0,guest:0})}; const isWrong=!d.word.includes(ch); if(isWrong){newWrong++; canvas.classList.add('shake'); setTimeout(()=>canvas.classList.remove('shake'),300)} const solved=d.word.split("").every(l=>newGuesses.includes(l)); if(solved){over=true; winner=mine; scores[mine]=(scores[mine]||0)+1}else if(newWrong>=6){over=true; const opp=mine==='host'?'guest':'host'; winner=opp; scores[opp]=(scores[opp]||0)+1} const patch={guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP}; if(over){patch.awaitingWordBy=mine} await db.ref("games/"+gameId).update(patch); this.disabled=true; this.dataset.used='1'}
+    async function onGuess(){
+      const ch=this.textContent;
+      const snap=await db.ref("games/"+gameId).get(), d=snap.val();
+      if(!d || d.over || d.awaitingWordBy) return;
+      const mine=isHost?'host':'guest';
+      if(d.turn!==mine) return;
+      if((d.guesses||[]).includes(ch)) return;
 
-    /* Game listener */
+      let newGuesses=[...(d.guesses||[]),ch], newWrong=d.wrong||0, over=false, winner=null;
+      const scores={...(d.scores||{host:0,guest:0})};
+      const isWrong=!d.word.includes(ch);
+      if(isWrong){ newWrong++; canvas.classList.add('shake'); setTimeout(()=>canvas.classList.remove('shake'),300) }
+      const solved=d.word.split("").every(l=>newGuesses.includes(l));
+      if(solved){ over=true; winner=mine; scores[mine]=(scores[mine]||0)+1 }
+      else if(newWrong>=6){ over=true; const opp=mine==='host'?'guest':'host'; winner=opp; scores[opp]=(scores[opp]||0)+1 }
+
+      const patch={guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP};
+      if(over){ patch.awaitingWordBy = mine }
+      await db.ref("games/"+gameId).update(patch);
+      this.disabled=true; this.dataset.used='1';
+    }
+
+    /* ---------------- Game listeners ---------------- */
     function listenGame(){
-      if(!gameId)return;
+      if(!gameId) return;
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added",s=>addChat(s.val()));
       db.ref("games/" + gameId).on("value", snap => {
         const d=snap.val(); if(!d) return;
 
-        // Keep latest for i18n
-        lastPlayers=d.players||{}; lastPresence=d.presence||{};
-        updateLobby(lastPlayers,lastPresence);
+        updateLobby(d.players||{}, d.presence||{});
 
         const key=JSON.stringify([d.guesses,d.wrong,d.over,d.turn,d.scores,d.settings,d.roundStartMs,d.winner,d.awaitingWordBy]);
         if(key===lastUpdateKey){return} lastUpdateKey=key;
@@ -379,7 +678,7 @@
         setWordDisplay(d.word,d.guesses||[]); currentWrong=d.wrong||0; drawAll(currentWrong);
 
         const used=new Set(d.guesses||[]);
-        lettersEl.querySelectorAll('button').forEach(b=>{const usedNow=used.has(b.textContent); b.disabled=usedNow; b.dataset.used=usedNow?'1':'0'});
+        lettersEl.querySelectorAll('button').forEach(b=>{ const usedNow=used.has(b.textContent); b.disabled=usedNow; b.dataset.used=usedNow?'1':'0' });
 
         scoreHostEl.textContent=d.scores?.host||0; scoreGuestEl.textContent=d.scores?.guest||0; updateRoundLabel();
         awaitingWordBy=d.awaitingWordBy||null; updateRoleBadges();
@@ -390,30 +689,47 @@
         const myTurnActive=(!d.over && !chooser && d.turn===mine);
         setAllInteractiveDisabled(!myTurnActive);
 
-        if(chooser){newWordBtn.classList.remove('hidden'); newWordBtn.disabled=!(chooser===mine)} else {newWordBtn.classList.add('hidden')}
+        if(chooser){ newWordBtn.classList.remove('hidden'); newWordBtn.disabled=!(chooser===mine) } else { newWordBtn.classList.add('hidden') }
 
         if(d.over){
           setAllInteractiveDisabled(true);
           if(d.winner){
             const msg=(d.winner==='host')?((lang==='sv')?T.sv.hostWon:T.en.hostWon):((lang==='sv')?T.sv.guestWon:T.en.guestWon);
-            addChat({name:"System",text:msg,ts:Date.now()}); showResultOverlay(d.word, d.winner);
+            addChat({name:"System",text:msg,ts:Date.now()});
+            showResultOverlay(d.word, d.winner);
           }
-        }else{resultOverlay.classList.remove('show')}
+        } else {
+          resultOverlay.classList.remove('show');
+        }
       });
     }
 
-    /* New word */
-    newWordBtn.onclick=async()=>{const s=await db.ref("games/"+gameId).get(), d=s.val(); if(!d)return; if(!d.over && !d.awaitingWordBy)return alert((lang==='sv')?T.sv.roundNotOver:T.en.roundNotOver); const mine=isHost?'host':'guest'; if(d.awaitingWordBy!==mine)return alert((lang==='sv')?T.sv.chooserOnly:T.en.chooserOnly); const nw=(prompt(T[lang].enterWord)||"").toUpperCase(); if(!/^[A-ZÅÄÖ]+$/.test(nw))return; const nextTurn=(mine==='host')?'guest':'host'; await db.ref("games/"+gameId).update({word:nw,guesses:[],wrong:0,over:false,winner:null,turn:nextTurn,roundStartMs:(timerSeconds>0?Date.now():0),awaitingWordBy:null}); resultOverlay.classList.remove('show'); newWordBtn.classList.add('hidden')};
+    /* ---------------- New word (chooser lock) ---------------- */
+    newWordBtn.onclick=async()=>{
+      const s=await db.ref("games/"+gameId).get(), d=s.val(); if(!d) return;
+      if(!d.over && !d.awaitingWordBy) return alert((lang==='sv')?T.sv.roundNotOver:T.en.roundNotOver);
+      const mine=isHost?'host':'guest';
+      if(d.awaitingWordBy!==mine) return alert((lang==='sv')?T.sv.chooserOnly:T.en.chooserOnly);
+      const nw=(prompt(T[lang].enterWord)||"").toUpperCase();
+      if(!/^[A-ZÅÄÖ]+$/.test(nw)) return;
+      const nextTurn=(mine==='host')?'guest':'host';
+      await db.ref("games/"+gameId).update({word:nw,guesses:[],wrong:0,over:false,winner:null,turn:nextTurn,roundStartMs:(timerSeconds>0?Date.now():0),awaitingWordBy:null});
+      resultOverlay.classList.remove('show'); newWordBtn.classList.add('hidden');
+    };
 
-    /* Init */
-    function updateShareText(){const L=T[lang]; const code=gameCode()||"—"; shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>`; backBtnTop.classList.toggle('hidden', !gameId)}
+    /* ---------------- Init ---------------- */
+    function updateShare(){ const L=T[lang]; const code=gameCode()||"—"; shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>` }
     function init(){
+      // intro
       setTimeout(()=>stinger.classList.add('out'),1000); setTimeout(()=>stinger.style.display='none',1700);
+      // background
       initParticles(); tickParticles();
+      // i18n
       langGlobal.value=lang; langInSettings.value=lang; applyLang();
+      // UI
       buildLetters(); lettersEl.querySelector('button')?.focus();
       updateShareText(); resizeCanvas();
-      if(!deepLinkGame){startDiv.classList.remove('hidden'); gameDiv.classList.add('hidden')}
+      if(!deepLinkGame){ startDiv.classList.remove('hidden'); gameDiv.classList.add('hidden') }
     }
     window.addEventListener('load', init);
   </script>
