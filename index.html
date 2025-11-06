@@ -10,18 +10,26 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
   <style>
     :root{
-      /* Grayscale palette */
+      /* Monochrome studio palette */
       --grad-a:#e5e7eb; /* silver */
       --grad-b:#9ca3af; /* gray-400 */
-      --bg1:#0e0e11;
-      --bg2:#1a1a1f;
-      --panel:rgba(255,255,255,.08);
-      --text:#fff;
+      --bg1:#0c0c0f;
+      --bg2:#141418;
+      --panel:rgba(255,255,255,.06);
+      --panel-strong:rgba(255,255,255,.08);
+      --text:#ffffff;
       --text-dim:#bdbdbd;
-      --accent-shadow: rgba(180, 180, 180, .35);
-      --accent-shadow-strong: rgba(210,210,210,.55);
-      --gap:12px;
+      --line:#2c2c33;
+      --chip-bg:#1b1b20;
+      --chip-line:#2e2e35;
+      --gap:14px;
+      --radius-xl:18px;
+      --radius-lg:14px;
+      --radius-md:12px;
+      --shadow-1:0 8px 28px rgba(0,0,0,.45);
+      --shadow-2:0 2px 10px rgba(0,0,0,.35);
     }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -29,101 +37,137 @@
       font-family:"Poppins",sans-serif;
       color:var(--text);
       background:
-        radial-gradient(circle at 20% 20%, #18181d, #0e0e11 70%),
+        radial-gradient(1200px 900px at 20% 20%, #1a1a1f 0%, rgba(26,26,31,0) 60%),
         linear-gradient(160deg, var(--bg1), var(--bg2));
       min-height:100dvh;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:12px;
+      padding:16px;
       overflow-x:hidden;
       -webkit-tap-highlight-color:transparent;
     }
-    h1{
-      font-weight:700;
-      text-align:center;
-      margin:0;
-      font-size:clamp(1.3rem,2.6vw,1.8rem);
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent
+
+    /* App shell */
+    .shell{
+      width:min(1200px,98vw);
+      min-height:92dvh;
+      display:flex; flex-direction:column;
+      gap:var(--gap);
     }
 
-    /* Card + responsive grid layout */
-    .card{
-      width:min(1100px,98vw);
-      min-height:92dvh;
+    /* Top bar */
+    .topbar{
+      display:flex; align-items:center; gap:12px;
+      justify-content:space-between;
       background:var(--panel);
-      border-radius:18px;
+      border:1px solid var(--line);
+      border-radius:var(--radius-xl);
+      padding:10px 12px;
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow-2);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+    }
+    .logo{
+      width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+      box-shadow:0 6px 20px rgba(200,200,200,.25);
+    }
+    .title{
+      margin:0;
+      font-weight:700;
+      letter-spacing:.02em;
+      font-size:clamp(1.1rem,2.2vw,1.4rem);
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .topbar-right{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+
+    /* Game code chip */
+    #share{ color:var(--text-dim); font-size:.95rem; }
+    .codeChip{
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.28rem .6rem;
+      border:1px solid var(--chip-line);
+      border-radius:.7rem;
+      background:var(--chip-bg);
+      color:#fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing:.03em;
+      box-shadow:var(--shadow-2);
+      user-select:all;
+    }
+
+    /* Content card */
+    .card{
+      flex:1;
+      background:var(--panel-strong);
+      border:1px solid var(--line);
+      border-radius:var(--radius-xl);
       backdrop-filter:blur(12px);
-      box-shadow:0 0 25px rgba(0,0,0,.6);
+      box-shadow:var(--shadow-1);
       padding:16px;
       display:flex;
       flex-direction:column;
       gap:var(--gap);
-      overflow:visible
     }
+
     .hidden{display:none!important}
     .row{display:flex;gap:10px;align-items:center}
     .row>*{flex:1}
 
+    /* Controls */
     input,select,button{
-      font-family:inherit;
-      font-size:1rem;
-      border-radius:12px;
-      border:1px solid #333;
+      font-family:inherit; font-size:1rem;
+      border-radius:var(--radius-md);
+      border:1px solid var(--line);
       padding:.8rem 1rem;
-      background:#222;
-      color:#fff;
-      width:100%
+      background:#1a1a1f; color:#fff; width:100%;
     }
-    select{background:#1f1f24}
-
+    select{background:#15151a}
     button{
-      cursor:pointer;
-      font-weight:700;
-      color:#111;
-      border:none;
+      cursor:pointer; font-weight:700; color:#111; border:none;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 6px 18px var(--accent-shadow);
-      transition:all .15s
+      box-shadow:0 8px 26px rgba(180,180,180,.25);
+      transition:transform .15s ease, box-shadow .15s ease;
     }
     button:hover{transform:translateY(-2px)}
     button:disabled{opacity:.5;cursor:not-allowed}
 
-    /* Lobby bar */
+    /* Start screen layout */
+    .startGrid{display:grid;gap:12px;grid-template-columns:1fr}
+    @media (min-width:720px){ .startGrid{grid-template-columns:1fr 1fr} }
+    .full{grid-column:1 / -1}
+
+    /* Lobby bar (inside card) */
     #lobbyBar{
-      position:sticky;top:0;z-index:10;
       background:rgba(0,0,0,.12);
-      border:1px solid #2b2b30;
-      border-radius:12px;padding:8px;
-      display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap
+      border:1px solid var(--line);
+      border-radius:var(--radius-lg);
+      padding:8px;
+      display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap
     }
     .lobbyItem{display:flex;align-items:center;gap:8px}
     #lobbyMsg{color:var(--text-dim);font-size:.9rem}
     .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
     .online{background:#22c55e}.offline{background:#ef4444}
 
-    /* Main area as responsive two-column on desktop */
-    #gameMain{flex:1;display:flex;flex-direction:column;gap:14px;padding:6px}
-    .gameGrid{
-      display:grid;gap:14px;
-      grid-template-columns:1fr;
-      align-items:start
-    }
-    @media (min-width: 1024px){
-      .gameGrid{grid-template-columns: 1.2fr .8fr}
-    }
+    /* Game grid */
+    #gameMain{flex:1;display:flex;flex-direction:column;gap:14px}
+    .gameGrid{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
+    @media (min-width: 1024px){ .gameGrid{grid-template-columns: 1.3fr .7fr} }
 
-    #share{text-align:center;font-size:.9rem;color:var(--text-dim);margin:6px 0 10px;word-break:break-all}
-    #scoreboard{text-align:center;font-weight:700;font-size:1.1rem;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    #scoreboard{text-align:center;font-weight:700;font-size:1.05rem;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     #turnIndicator{text-align:center;font-weight:600;color:var(--text-dim)}
 
-    /* Left column (canvas + word + letters) */
     .leftCol{display:flex;flex-direction:column;gap:12px}
     #hangman{
-      width:100%;background:#111;border:1px solid #333;border-radius:12px;
-      max-height:40dvh;min-height:240px
+      width:100%;background:#0f0f13;border:1px solid var(--line);border-radius:var(--radius-lg);
+      max-height:42dvh;min-height:260px
     }
     #word{text-align:center;letter-spacing:.25em;font-size:1.35rem;margin-top:4px}
 
@@ -132,18 +176,16 @@
     #letters button{font-weight:800}
     @media (hover:hover) and (pointer:fine){
       #letters button:hover:not(:disabled){
-        box-shadow:0 0 12px var(--accent-shadow-strong), 0 0 18px var(--accent-shadow);
+        box-shadow:0 0 12px rgba(220,220,220,.5), 0 0 18px rgba(180,180,180,.35);
         transform:translateY(-3px) scale(1.04)
       }
     }
     #letters button:disabled{filter:saturate(.7)}
-
     @media (max-width:959px){#letters{grid-template-columns:repeat(8,1fr)}}
     @media (max-width:600px){#letters{grid-template-columns:repeat(7,1fr);margin-bottom:40px}#hangman{max-height:38dvh}}
     @media (max-width:420px){#letters{grid-template-columns:repeat(6,1fr)}}
     @media (min-width:960px){
-      .card{padding-top:10px}
-      #gameMain,#hangman,#letters,#chatWrap,#actions{max-width:1000px;margin:auto}
+      #gameMain,#hangman,#letters,#chatWrap,#actions{max-width:1040px;margin:auto}
       #hangman{max-height:calc(70vh - 180px)}
     }
 
@@ -158,108 +200,128 @@
       0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}
     }
 
-    /* Right column (chat + actions) */
+    /* Right column */
     .rightCol{display:flex;flex-direction:column;gap:12px}
-    #chatWrap{border:1px solid #2b2b30;border-radius:12px;background:rgba(255,255,255,.05);padding:10px;display:flex;flex-direction:column;gap:8px;min-height:260px}
-    #chatList{flex:1;max-height:28dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+    #chatWrap{
+      border:1px solid var(--line);
+      border-radius:var(--radius-lg);
+      background:rgba(255,255,255,.05);
+      padding:10px;display:flex;flex-direction:column;gap:8px;min-height:280px
+    }
+    #chatList{flex:1;max-height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
     .chatMsg{background:rgba(255,255,255,.06);border:1px solid #35353a;border-radius:10px;padding:6px;font-size:.95rem}
     .chatMeta{font-size:.75rem;color:var(--text-dim);margin-top:2px}
     .fadeout{opacity:0;transition:opacity .6s}
     #actions{display:flex;gap:8px;justify-content:center;margin-top:2px;flex-wrap:wrap}
 
-    /* Start screen tweaks for breathing room */
-    .startGrid{display:grid;gap:12px;grid-template-columns:1fr}
-    @media (min-width:700px){
-      .startGrid{grid-template-columns:1fr 1fr}
-    }
-    .full{grid-column:1 / -1}
   </style>
 </head>
 <body>
-  <!-- Start -->
-  <div id="start" class="card">
-    <h1 id="titleTop">HÄNGA GUBBE</h1>
-    <div class="startGrid">
-      <div>
-        <label for="lang" id="langLabel">Språk / Language</label>
-        <select id="lang"><option value="sv">Svenska</option><option value="en">English</option></select>
+  <div class="shell">
+    <!-- Top bar (available everywhere) -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1 class="title" id="appTitle">HÄNGA GUBBE</h1>
       </div>
-      <div>
-        <label for="playerName" id="nameLabel">Ditt namn</label>
-        <input id="playerName" maxlength="24"/>
-      </div>
-
-      <div class="row full">
-        <button id="createBtn">🆕 Skapa spel</button>
-        <button id="joinBtn">🔗 Gå med i spel</button>
-      </div>
-
-      <div id="joinArea" class="row hidden full">
-        <input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10"/>
-        <button id="joinGo">Gå med</button>
+      <div class="topbar-right">
+        <div id="share"></div>
+        <!-- Live language switch (works pre-game and in-game) -->
+        <label class="hidden" for="langGlobal" id="langTopLabel">Language</label>
+        <select id="langGlobal" aria-labelledby="langTopLabel">
+          <option value="sv">Svenska</option>
+          <option value="en">English</option>
+        </select>
+        <button id="backBtnTop" class="hidden">⬅️ Back</button>
       </div>
     </div>
-  </div>
 
-  <!-- Game -->
-  <div id="game" class="card hidden">
-    <div id="lobbyBar">
-      <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span></div>
-      <div class="lobbyItem"><span id="dotGuest" class="dot offline"></span>👤 <span id="nameGuest">⏳ Väntar…</span></div>
-      <div id="lobbyMsg" class="lobbyItem">—</div>
-    </div>
-
-    <div id="gameMain">
-      <h1 id="titleGame">HÄNGA GUBBE</h1>
-      <div id="share"></div>
-      <div id="scoreboard">🧑 0 | 👤 0</div>
-      <div id="turnIndicator">⏳ Väntar på tur…</div>
-
-      <div class="gameGrid">
-        <!-- Left column -->
-        <div class="leftCol">
-          <canvas id="hangman"></canvas>
-          <div id="word">_</div>
-
-          <div class="row" id="timerControlsRow" style="justify-content:center;flex-wrap:wrap">
-            <button id="timerOpen" class="hidden" style="max-width:220px">⏱ Ställ in timer</button>
-            <div id="timerConfig" class="row hidden" style="max-width:520px;width:100%">
-              <input id="timerInput" type="number" min="0" max="100" value="0"/>
-              <button id="timerConfirm">✅</button>
-              <button id="timerCancel">✖</button>
-              <button id="timerOff">🕒 Av</button>
-            </div>
-          </div>
-
-          <div id="timerBar"><div id="timerFill"></div></div>
-          <div id="letters"></div>
+    <!-- Start screen -->
+    <div id="start" class="card">
+      <div class="startGrid">
+        <div>
+          <label for="playerName" id="nameLabel">Ditt namn</label>
+          <input id="playerName" maxlength="24"/>
+        </div>
+        <div class="hidden">
+          <!-- (kept for accessibility; global switcher controls language now) -->
+          <label for="lang" id="langLabel">Språk / Language</label>
+          <select id="lang">
+            <option value="sv">Svenska</option>
+            <option value="en">English</option>
+          </select>
         </div>
 
-        <!-- Right column -->
-        <div class="rightCol">
-          <div id="chatWrap">
-            <div id="chatList"></div>
-            <div class="row">
-              <input id="chatText" placeholder="Skriv ett meddelande..." maxlength="200"/>
-              <button id="chatSend">Skicka</button>
-            </div>
-          </div>
-          <div id="actions">
-            <button id="newWordBtn" class="hidden">✍️ Välj nytt ord</button>
-            <button id="backBtn">⬅️ Tillbaka</button>
-          </div>
+        <div class="row full">
+          <button id="createBtn">🆕 Skapa spel</button>
+          <button id="joinBtn">🔗 Gå med i spel</button>
+        </div>
+
+        <div id="joinArea" class="row hidden full">
+          <input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10"/>
+          <button id="joinGo">Gå med</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Name modal -->
-  <div id="nameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px">
-    <div style="width:min(440px,92vw);background:rgba(20,20,24,.97);border:1px solid #333;border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6)">
-      <h2 id="nameModalTitle" style="margin:0 0 8px;font-size:1.1rem">Välj ett namn</h2>
-      <p id="nameModalDesc" style="margin:0 0 10px;color:#bdbdbd;font-size:.95rem">Du måste ange ett namn för att gå vidare.</p>
-      <input id="nameModalInput" maxlength="24" style="width:100%;font-family:inherit;font-size:1rem;border-radius:12px;border:1px solid #333;padding:.8rem 1rem;background:#222;color:#fff"/>
-      <div class="row" style="margin-top:10px"><button id="nameModalConfirm">OK</button></div>
+    <!-- Game -->
+    <div id="game" class="card hidden">
+      <div id="lobbyBar">
+        <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span></div>
+        <div class="lobbyItem"><span id="dotGuest" class="dot offline"></span>👤 <span id="nameGuest">⏳ Väntar…</span></div>
+        <div id="lobbyMsg" class="lobbyItem">—</div>
+      </div>
+
+      <div id="gameMain">
+        <div id="scoreboard">🧑 0 | 👤 0</div>
+        <div id="turnIndicator">⏳ Väntar på tur…</div>
+
+        <div class="gameGrid">
+          <!-- Left -->
+          <div class="leftCol">
+            <canvas id="hangman"></canvas>
+            <div id="word">_</div>
+
+            <div class="row" id="timerControlsRow" style="justify-content:center;flex-wrap:wrap">
+              <button id="timerOpen" class="hidden" style="max-width:220px">⏱ Ställ in timer</button>
+              <div id="timerConfig" class="row hidden" style="max-width:520px;width:100%">
+                <input id="timerInput" type="number" min="0" max="100" value="0"/>
+                <button id="timerConfirm">✅</button>
+                <button id="timerCancel">✖</button>
+                <button id="timerOff">🕒 Av</button>
+              </div>
+            </div>
+
+            <div id="timerBar"><div id="timerFill"></div></div>
+            <div id="letters"></div>
+          </div>
+
+          <!-- Right -->
+          <div class="rightCol">
+            <div id="chatWrap">
+              <div id="chatList"></div>
+              <div class="row">
+                <input id="chatText" placeholder="Skriv ett meddelande..." maxlength="200"/>
+                <button id="chatSend">Skicka</button>
+              </div>
+            </div>
+            <div id="actions">
+              <button id="newWordBtn" class="hidden">✍️ Välj nytt ord</button>
+              <button id="backBtn">⬅️ Tillbaka</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Name modal -->
+    <div id="nameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px">
+      <div style="width:min(440px,92vw);background:rgba(20,20,24,.97);border:1px solid #333;border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6)">
+        <h2 id="nameModalTitle" style="margin:0 0 8px;font-size:1.1rem">Välj ett namn</h2>
+        <p id="nameModalDesc" style="margin:0 0 10px;color:#bdbdbd;font-size:.95rem">Du måste ange ett namn för att gå vidare.</p>
+        <input id="nameModalInput" maxlength="24" style="width:100%;font-family:inherit;font-size:1rem;border-radius:12px;border:1px solid #333;padding:.8rem 1rem;background:#222;color:#fff"/>
+        <div class="row" style="margin-top:10px"><button id="nameModalConfirm">OK</button></div>
+      </div>
     </div>
   </div>
 
@@ -281,10 +343,11 @@
     const startDiv=document.getElementById("start"),
           gameDiv=document.getElementById("game"),
           gameMain=document.getElementById("gameMain"),
-          langSel=document.getElementById("lang"),
-          langLabel=document.getElementById("langLabel"),
-          titleTop=document.getElementById("titleTop"),
-          titleGame=document.getElementById("titleGame"),
+          appTitle=document.getElementById("appTitle"),
+          langGlobal=document.getElementById("langGlobal"),
+          backBtnTop=document.getElementById("backBtnTop"),
+          shareEl=document.getElementById("share"),
+
           nameInput=document.getElementById("playerName"),
           nameLabel=document.getElementById("nameLabel"),
           createBtn=document.getElementById("createBtn"),
@@ -292,12 +355,13 @@
           joinArea=document.getElementById("joinArea"),
           joinCodeInput=document.getElementById("joinCode"),
           joinGo=document.getElementById("joinGo"),
+
           nameHost=document.getElementById("nameHost"),
           nameGuest=document.getElementById("nameGuest"),
           dotHost=document.getElementById("dotHost"),
           dotGuest=document.getElementById("dotGuest"),
           lobbyMsg=document.getElementById("lobbyMsg"),
-          shareEl=document.getElementById("share"),
+
           scoreEl=document.getElementById("scoreboard"),
           turnEl=document.getElementById("turnIndicator"),
           canvas=document.getElementById("hangman"),
@@ -328,13 +392,11 @@
     const T={
       sv:{
         appTitle:"HÄNGA GUBBE",
-        appTitleEn:"HANGMAN", /* used when switching title while lang=en */
         nameLabel:"Ditt namn",
-        langLabel:"Språk / Language",
         enterWord:"Ange ett ord att spela med:",
         notFound:"Spelet hittades inte.",
         notYourTurn:"Inte din tur!",
-        share:"Dela denna länk:",
+        share:"Spelkod:",
         loading:"Laddar spel…",
         yourTurn:"🎯 Din tur!",
         oppTurn:"⏳ Motståndarens tur…",
@@ -363,13 +425,11 @@
       },
       en:{
         appTitle:"HANGMAN",
-        appTitleEn:"HANGMAN",
         nameLabel:"Your name",
-        langLabel:"Language",
         enterWord:"Enter a word to start:",
         notFound:"Game not found.",
         notYourTurn:"Not your turn!",
-        share:"Share this link:",
+        share:"Game code:",
         loading:"Loading game…",
         yourTurn:"🎯 Your turn!",
         oppTurn:"⏳ Opponent's turn…",
@@ -399,38 +459,58 @@
     };
 
     /* ---------- i18n ---------- */
-    langSel.value=lang;
     function applyLang(){
       const L=T[lang];
       document.documentElement.lang = (lang==='sv'?'sv':'en');
-      titleTop.textContent = L.appTitle;
-      titleGame.textContent = L.appTitle;
+      appTitle.textContent = L.appTitle;
+
+      // Start screen
       nameLabel.textContent = L.nameLabel;
-      langLabel.textContent = L.langLabel;
       createBtn.textContent = L.create;
       joinBtn.textContent = L.join;
       joinGo.textContent = L.joinGo;
       joinCodeInput.placeholder = L.joinPlaceholder;
-      chatText.placeholder = L.chatPlaceholder;
-      chatSend.textContent = L.chatSend;
+
+      // Game UI
       newWordBtn.textContent = L.chooseWordCta;
       backBtn.textContent = L.back;
+      chatText.placeholder = L.chatPlaceholder;
+      chatSend.textContent = L.chatSend;
+      document.getElementById("timerOpen").textContent = L.timerOpen;
+      document.getElementById("timerOff").textContent = L.timerOff;
+
+      // Name modal
       document.getElementById("nameModalTitle").textContent = L.modalTitle;
       document.getElementById("nameModalDesc").textContent = L.modalDesc;
       nameModalInput.placeholder = L.modalPlaceholder;
-      document.getElementById("timerOpen").textContent = L.timerOpen;
-      document.getElementById("timerOff").textContent = L.timerOff;
+
+      // Topbar back label based on language/state
+      backBtnTop.textContent = (lang==='sv') ? "⬅️ Tillbaka" : "⬅️ Back";
+
+      // Refresh code chip text
+      updateShareText();
+      updateLobbyTextWaiting();
+      updateTurnLabel(lastTurnCached);
     }
-    applyLang();
-    langSel.onchange=()=>{
-      lang=langSel.value; localStorage.setItem("lang",lang); applyLang(); updateShareText();
-      // Update lobby "waiting..." if needed
-      nameGuest.textContent = (nameGuest.dataset.hasGuest==="1") ? nameGuest.textContent : T[lang].waiting;
+    function updateLobbyTextWaiting(){
+      const hasGuest = nameGuest.dataset.hasGuest==="1";
+      if(!hasGuest) nameGuest.textContent = T[lang].waiting;
+    }
+
+    langGlobal.value = lang;
+    langGlobal.onchange = ()=>{
+      lang = langGlobal.value;
+      localStorage.setItem("lang", lang);
+      applyLang();
     };
+
+    // Keep hidden legacy #lang (if any) in sync for safety
+    const hiddenStartLang = document.getElementById("lang");
+    if(hiddenStartLang){ hiddenStartLang.value = lang; hiddenStartLang.onchange = ()=>{ langGlobal.value = hiddenStartLang.value; langGlobal.onchange() } }
 
     /* ---------- Helpers ---------- */
     const escapeH=s=>(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
-    const shareLink=()=>location.origin+location.pathname+"?game="+gameId;
+    const gameCode=()=> (gameId||"").replace(/^hangman-/,"");
 
     function requireNickname(){
       let stored=(nameInput.value||localStorage.getItem("nickname")||"").trim();
@@ -464,12 +544,12 @@
       })
     }
 
-    /* ---------- Canvas sizing/drawing ---------- */
+    /* ---------- Canvas ---------- */
     function resizeCanvas(){
       const w=Math.min(900,Math.floor(gameMain.clientWidth));
       const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.7)-180));
-      canvas.width=Math.max(240,Math.min(w,900));
-      canvas.height=Math.max(240,h);
+      canvas.width=Math.max(260,Math.min(w,900));
+      canvas.height=Math.max(260,h);
       drawAll(currentWrong);
       canvas.style.maxWidth="100%"; canvas.style.height="auto"
     }
@@ -477,9 +557,10 @@
 
     const grad=()=>{
       const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-      g.addColorStop(0,getComputedStyle(document.documentElement).getPropertyValue('--grad-a').trim());
-      g.addColorStop(.5,getComputedStyle(document.documentElement).getPropertyValue('--grad-b').trim());
-      g.addColorStop(1,getComputedStyle(document.documentElement).getPropertyValue('--grad-a').trim());
+      const styles=getComputedStyle(document.documentElement);
+      g.addColorStop(0,styles.getPropertyValue('--grad-a').trim());
+      g.addColorStop(.5,styles.getPropertyValue('--grad-b').trim());
+      g.addColorStop(1,styles.getPropertyValue('--grad-a').trim());
       return g
     };
     function drawAll(w){
@@ -489,12 +570,12 @@
       ctx.moveTo(10*sX,240*sY);ctx.lineTo(190*sX,240*sY);
       ctx.moveTo(50*sX,240*sY);ctx.lineTo(50*sX,20*sY);ctx.lineTo(130*sX,20*sY);ctx.lineTo(130*sX,50*sY);
       ctx.stroke();
-      if(w>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke()}      // head
-      if(w>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke()} // body
-      if(w>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke()} // arm L
-      if(w>3){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke()} // arm R
-      if(w>4){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke()} // leg L
-      if(w>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke()} // leg R
+      if(w>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke()}
+      if(w>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke()}
+      if(w>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke()}
+      if(w>3){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(160*sX,140*sY);ctx.stroke()}
+      if(w>4){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(110*sX,200*sY);ctx.stroke()}
+      if(w>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke()}
     }
     function setWordDisplay(word,guesses){
       wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" ")
@@ -515,9 +596,9 @@
     async function onGuess(){
       const ch=this.textContent;
       const snap=await db.ref("games/"+gameId).get(),d=snap.val();
-      if(!d || d.over || d.awaitingWordBy){ return } // locked when over or awaiting word
+      if(!d || d.over || d.awaitingWordBy){ return }
       const mine=isHost?"host":"guest";
-      if(d.turn!==mine){ return } // not your turn: buttons are disabled already
+      if(d.turn!==mine){ return }
       if((d.guesses||[]).includes(ch))return;
 
       let newGuesses=[...(d.guesses||[]),ch],newWrong=d.wrong||0,over=!1,winner=null;
@@ -531,8 +612,7 @@
       else if(newWrong>=6){ over=!0; const opp=mine==="host"?"guest":"host"; winner=opp; scores[opp]=(scores[opp]||0)+1 }
 
       const patch={guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP};
-      // If round finished, set who must choose next word: the current guesser (mine).
-      if(over){ patch.awaitingWordBy = mine }
+      if(over){ patch.awaitingWordBy = mine } // current guesser chooses next
       await db.ref("games/"+gameId).update(patch)
     }
 
@@ -572,25 +652,28 @@
       setTimeout(()=>wrap.classList.add("fadeout"),15000); setTimeout(()=>wrap.remove(),16500)
     }
 
-    function setTurn(turn){
+    let lastTurnCached=null;
+    function updateTurnLabel(turn){
+      if(!turn) return;
       const mine=isHost?"host":"guest";
       turnEl.textContent=(turn===mine)?((lang==="sv")?T.sv.yourTurn:T.en.yourTurn):((lang==="sv")?T.sv.oppTurn:T.en.oppTurn);
       turnEl.style.opacity=".3"; setTimeout(()=>turnEl.style.opacity="1",120)
     }
 
-    /* ---------- UI enable/disable helpers ---------- */
+    /* ---------- UI enable/disable ---------- */
     function setLettersEnabled(enabled){
       lettersEl.querySelectorAll("button").forEach(b=>b.disabled=!enabled || b.dataset.used==="1")
     }
     function setAllInteractiveDisabled(disabled){
-      // main interactivity: letters and timer config; chat stays enabled
       setLettersEnabled(!disabled);
       [timerOpen,timerConfirm,timerCancel,timerOff,timerInput].forEach(el=>{ if(el) el.disabled=disabled })
     }
 
     function updateShareText(){
-      const L=T[lang]; const link=shareLink();
-      shareEl.innerHTML=`${L.share} <a href="${link}" target="_blank" rel="noopener">${link}</a>`;
+      const L=T[lang]; const code=gameCode()||"—";
+      shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>`;
+      // Back button in topbar is visible only when inside a game
+      backBtnTop.classList.toggle("hidden", !gameId);
     }
 
     function showGame(){
@@ -599,7 +682,15 @@
     }
 
     /* ---------- Navigation ---------- */
-    backBtn.onclick=()=>{ if(!confirm(T[lang].confirmBack))return; if(gameId)db.ref("games/"+gameId).remove(); location.href=location.pathname };
+    function confirmBack(){
+      return confirm(T[lang].confirmBack);
+    }
+    function leaveGame(){
+      if(gameId) db.ref("games/"+gameId).remove();
+      location.href=location.pathname;
+    }
+    backBtn.onclick=()=>{ if(confirmBack()) leaveGame() };
+    backBtnTop.onclick=()=>{ if(confirmBack()) leaveGame() };
 
     /* ---------- Create / Join ---------- */
     createBtn.onclick=async()=>{
@@ -633,7 +724,7 @@
       if(!deepLinkGame)return;
       showGame(); nickname=(nameInput.value||"").trim(); if(!nickname)nickname=await requireNickname();
       const snap=await db.ref("games/"+deepLinkGame).get();
-      if(!snap.exists())return backBtn.click();
+      if(!snap.exists())return leaveGame();
       const d=snap.val();
       if(!d.players?.guest){ await db.ref("games/"+deepLinkGame+"/players").update({guest:nickname}) }
       isHost=!1; gameId=deepLinkGame; setupPresence("guest"); listenGame()
@@ -645,7 +736,7 @@
 
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added",s=>addChat(s.val()));
 
-      db.ref("games/"+gameId).on("value",snap=>{
+      db.ref("games/"+gameId").on("value",snap=>{
         const d=snap.val(); if(!d)return;
 
         updateLobby(d.players||{},d.presence||{});
@@ -658,7 +749,7 @@
 
         setWordDisplay(d.word,d.guesses||[]); currentWrong=d.wrong||0; drawAll(currentWrong);
 
-        // mark used letters
+        // used letters
         const used=new Set(d.guesses||[]);
         lettersEl.querySelectorAll("button").forEach(b=>{
           const usedNow=used.has(b.textContent);
@@ -667,7 +758,8 @@
 
         // scores & turn
         scoreEl.textContent=`🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`;
-        setTurn(d.turn);
+        lastTurnCached = d.turn;
+        updateTurnLabel(d.turn);
         updateShareText();
 
         /* ----- Post-round lock + chooser control ----- */
@@ -675,57 +767,51 @@
         const chooser = d.awaitingWordBy || null;
         const isChooser = chooser && chooser===mine;
 
-        // By default enable only when: not over, not awaiting word, and it's my turn.
+        // Enable letters only if: not over, not awaiting word, and it's my turn
         const myTurnActive = (!d.over && !chooser && d.turn===mine);
         setAllInteractiveDisabled(!myTurnActive);
 
-        // If awaiting a word: only chooser sees the "Pick new word" button; everyone else is locked.
+        // If awaiting a word: only chooser sees enabled button; others locked
         if(chooser){
           newWordBtn.classList.remove("hidden");
           newWordBtn.disabled = !isChooser;
           if(!isChooser){
-            // ensure letters/timer are off
             setAllInteractiveDisabled(true);
-            // Show a subtle hint in chat stream once per state change
             addChat({name:"System", text:(lang==="sv")?T.sv.chooserOnly:T.en.chooserOnly, ts:Date.now()});
           }
         }else{
-          // not awaiting: hide the button unless round just ended (we handle below)
           newWordBtn.classList.add("hidden");
         }
 
-        // If round just ended (over=true), set button visibility based on awaitingWordBy (set on win/lose)
+        // On round end, freeze letters
         if(d.over){
-          // Ensure letters are disabled on round end
           setAllInteractiveDisabled(true);
-          // show winner message once via chat
           if(d.winner){
-            addChat({name:"System",text:(d.winner==="host")?((lang==="sv")?T.sv.hostWon:T.en.hostWon):((lang==="sv")?T.sv.guestWon:T.en.guestWon),ts:Date.now()})
+            addChat({name:"System",
+              text:(d.winner==="host")?((lang==="sv")?T.sv.hostWon:T.en.hostWon):((lang==="sv")?T.sv.guestWon:T.en.guestWon),
+              ts:Date.now()
+            })
           }
         }
       })
     }
 
-    /* ---------- New word flow (chooser only) ---------- */
+    /* ---------- New word (chooser only) ---------- */
     newWordBtn.onclick=async()=>{
       const s=await db.ref("games/"+gameId).get(),d=s.val(); if(!d) return;
       if(!d.over && !d.awaitingWordBy) return alert((lang==="sv")?T.sv.roundNotOver:T.en.roundNotOver);
-
       const mine=isHost?"host":"guest";
       if(d.awaitingWordBy!==mine) return alert((lang==="sv")?T.sv.chooserOnly:T.en.chooserOnly);
 
       const nw=(prompt(T[lang].enterWord)||"").toUpperCase();
       if(!/^[A-ZÅÄÖ]+$/.test(nw)) return;
 
-      // Next round: guesser is the opposite of chooser
       const nextTurn = (mine==="host")?"guest":"host";
-
       await db.ref("games/"+gameId).update({
         word:nw,guesses:[],wrong:0,over:!1,winner:null,
         turn:nextTurn, roundStartMs:(timerSeconds>0?Date.now():0),
         awaitingWordBy:null
       });
-      // after setting new word, hide the button locally until state update arrives
       newWordBtn.classList.add("hidden");
     };
 
@@ -746,7 +832,14 @@
 
     /* ---------- Load ---------- */
     window.addEventListener("load",()=>{
-      if(!deepLinkGame){ startDiv.classList.remove("hidden"); gameDiv.classList.add("hidden") }
+      langGlobal.value = lang;
+      applyLang();
+
+      if(!deepLinkGame){
+        startDiv.classList.remove("hidden");
+        gameDiv.classList.add("hidden");
+      }
+      updateShareText();
       resizeCanvas()
     });
   </script>
