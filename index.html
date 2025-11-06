@@ -4,252 +4,265 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>HÄNGA GUBBE</title>
-  <meta name="theme-color" content="#0e0e11">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0b0b0e">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
   <style>
     :root{
-      /* Monochrome studio palette */
-      --grad-a:#e5e7eb; /* silver */
-      --grad-b:#9ca3af; /* gray-400 */
-      --bg1:#0c0c0f;
-      --bg2:#141418;
-      --panel:rgba(255,255,255,.06);
-      --panel-strong:rgba(255,255,255,.08);
-      --text:#ffffff;
-      --text-dim:#bdbdbd;
-      --line:#2c2c33;
-      --chip-bg:#1b1b20;
-      --chip-line:#2e2e35;
+      /* Studio grayscale */
+      --grad-a:#e5e7eb; --grad-b:#a1a1aa;
+      --bg1:#0b0b0e; --bg2:#141419;
+      --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.08);
+      --line:#2c2c33; --text:#fff; --text-dim:#bdbdbd; --muted:#8b8b95;
+      --chip-bg:#1b1b20; --chip-line:#2e2e35;
+      --radius-xl:18px; --radius-lg:14px; --radius-md:12px;
+      --shadow-1:0 16px 38px rgba(0,0,0,.5); --shadow-2:0 4px 18px rgba(0,0,0,.4);
       --gap:14px;
-      --radius-xl:18px;
-      --radius-lg:14px;
-      --radius-md:12px;
-      --shadow-1:0 8px 28px rgba(0,0,0,.45);
-      --shadow-2:0 2px 10px rgba(0,0,0,.35);
     }
 
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0;
-      font-family:"Poppins",sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(1200px 900px at 20% 20%, #1a1a1f 0%, rgba(26,26,31,0) 60%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
-      min-height:100dvh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:16px;
-      overflow-x:hidden;
-      -webkit-tap-highlight-color:transparent;
+      margin:0; color:var(--text);
+      font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: radial-gradient(1200px 900px at 20% 20%, #1a1a1f 0%, rgba(26,26,31,0) 55%), linear-gradient(160deg,var(--bg1),var(--bg2));
+      overflow:hidden; /* parallax lives behind, content scrolls inside container */
     }
 
-    /* App shell */
+    /* Background layers */
+    .bg {
+      position:fixed; inset:0; z-index:-2; pointer-events:none;
+      overflow:hidden;
+    }
+    #bgParticles, #bgVignette {
+      position:absolute; inset:0;
+    }
+    #bgVignette{
+      background: radial-gradient(90% 80% at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.55) 100%);
+      z-index:1;
+    }
+
+    /* App container (scrolls) */
     .shell{
-      width:min(1200px,98vw);
-      min-height:92dvh;
-      display:flex; flex-direction:column;
-      gap:var(--gap);
+      position:relative; z-index:1;
+      height:100dvh; overflow:auto;
+      padding:16px; display:flex; flex-direction:column; gap:var(--gap);
+      backdrop-filter: none;
+    }
+
+    /* Cinematic intro */
+    .stinger{
+      position:fixed; inset:0; background:#000; display:flex; align-items:center; justify-content:center;
+      z-index:9999; pointer-events:none; transition:opacity .6s ease;
+    }
+    .stinger .logo {
+      width:min(140px,22vw); height:min(140px,22vw); border-radius:22px;
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+      box-shadow:0 12px 42px rgba(200,200,200,.25);
+      transform:scale(.8); opacity:0;
+      animation:stingerPop 1.2s cubic-bezier(0.22,1,0.36,1) forwards .2s;
+    }
+    .stinger.out{opacity:0}
+    @keyframes stingerPop{
+      0%{transform:scale(.8); opacity:0}
+      60%{transform:scale(1.05); opacity:1}
+      100%{transform:scale(1); opacity:1}
     }
 
     /* Top bar */
     .topbar{
-      display:flex; align-items:center; gap:12px;
-      justify-content:space-between;
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:var(--radius-xl);
-      padding:10px 12px;
-      backdrop-filter:blur(10px);
-      box-shadow:var(--shadow-2);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl);
+      padding:10px 12px; box-shadow:var(--shadow-2); backdrop-filter:blur(10px);
     }
-    .brand{
-      display:flex; align-items:center; gap:10px;
-    }
-    .logo{
-      width:34px; height:34px; border-radius:10px;
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 6px 20px rgba(200,200,200,.25);
-    }
+    .brand{display:flex; align-items:center; gap:10px}
+    .brand .cube{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); box-shadow:0 6px 20px rgba(200,200,200,.25)}
     .title{
-      margin:0;
-      font-weight:700;
-      letter-spacing:.02em;
-      font-size:clamp(1.1rem,2.2vw,1.4rem);
-      background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin:0; line-height:1; letter-spacing:.02em;
+      font-family:"Bebas Neue", sans-serif; font-size:clamp(1.2rem,2.4vw,1.8rem);
+      background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
-    .topbar-right{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    }
+    .topbar-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
 
-    /* Game code chip */
-    #share{ color:var(--text-dim); font-size:.95rem; }
+    /* Code chip + HUD bits */
+    #share{ color:var(--text-dim); font-size:.95rem }
     .codeChip{
-      display:inline-flex; align-items:center; gap:.4rem;
-      padding:.28rem .6rem;
-      border:1px solid var(--chip-line);
-      border-radius:.7rem;
-      background:var(--chip-bg);
-      color:#fff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      letter-spacing:.03em;
-      box-shadow:var(--shadow-2);
-      user-select:all;
+      display:inline-flex; align-items:center; gap:.4rem; padding:.28rem .6rem;
+      border:1px solid var(--chip-line); border-radius:.7rem; background:var(--chip-bg); color:#fff;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; letter-spacing:.03em;
+      box-shadow:var(--shadow-2); user-select:all;
     }
 
-    /* Content card */
-    .card{
-      flex:1;
-      background:var(--panel-strong);
-      border:1px solid var(--line);
-      border-radius:var(--radius-xl);
-      backdrop-filter:blur(12px);
-      box-shadow:var(--shadow-1);
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      gap:var(--gap);
-    }
-
-    .hidden{display:none!important}
-    .row{display:flex;gap:10px;align-items:center}
-    .row>*{flex:1}
-
-    /* Controls */
+    /* Selects / buttons / inputs */
     input,select,button{
-      font-family:inherit; font-size:1rem;
-      border-radius:var(--radius-md);
-      border:1px solid var(--line);
-      padding:.8rem 1rem;
-      background:#1a1a1f; color:#fff; width:100%;
+      font-family:inherit; font-size:1rem; border-radius:var(--radius-md); border:1px solid var(--line);
+      background:#16161a; color:#fff; padding:.72rem .9rem;
     }
-    select{background:#15151a}
+    select{background:#121216}
     button{
       cursor:pointer; font-weight:700; color:#111; border:none;
       background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
-      box-shadow:0 8px 26px rgba(180,180,180,.25);
+      box-shadow:0 10px 28px rgba(180,180,180,.25);
       transition:transform .15s ease, box-shadow .15s ease;
     }
     button:hover{transform:translateY(-2px)}
-    button:disabled{opacity:.5;cursor:not-allowed}
+    button:disabled{opacity:.5; cursor:not-allowed}
+
+    /* Cards */
+    .card{
+      background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius-xl);
+      padding:16px; box-shadow:var(--shadow-1); backdrop-filter:blur(12px);
+      display:flex; flex-direction:column; gap:var(--gap);
+    }
+
+    .row{display:flex; gap:10px; align-items:center}
+    .row>*{flex:1}
+    .hidden{display:none!important}
 
     /* Start screen layout */
-    .startGrid{display:grid;gap:12px;grid-template-columns:1fr}
+    .startGrid{display:grid; gap:12px; grid-template-columns:1fr}
     @media (min-width:720px){ .startGrid{grid-template-columns:1fr 1fr} }
     .full{grid-column:1 / -1}
 
-    /* Lobby bar (inside card) */
+    /* Lobby strip */
     #lobbyBar{
-      background:rgba(0,0,0,.12);
-      border:1px solid var(--line);
-      border-radius:var(--radius-lg);
-      padding:8px;
-      display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap
+      background:rgba(0,0,0,.12); border:1px solid var(--line); border-radius:var(--radius-lg);
+      padding:8px; display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap
     }
-    .lobbyItem{display:flex;align-items:center;gap:8px}
-    #lobbyMsg{color:var(--text-dim);font-size:.9rem}
+    .lobbyItem{display:flex; align-items:center; gap:8px}
+    .badge{font-size:.75rem; padding:.08rem .4rem; border:1px solid var(--line); border-radius:.5rem; color:#ddd; background:rgba(255,255,255,.05)}
     .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
     .online{background:#22c55e}.offline{background:#ef4444}
+    #lobbyMsg{color:var(--text-dim); font-size:.9rem}
 
     /* Game grid */
-    #gameMain{flex:1;display:flex;flex-direction:column;gap:14px}
-    .gameGrid{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
-    @media (min-width: 1024px){ .gameGrid{grid-template-columns: 1.3fr .7fr} }
+    #gameMain{display:flex; flex-direction:column; gap:10px}
+    .hud{
+      display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;
+      color:var(--muted); font-weight:600; font-size:.95rem;
+    }
+    .hud .seg{display:flex; gap:.5rem; align-items:center; padding:.25rem .6rem; border:1px solid var(--line); border-radius:.6rem; background:rgba(255,255,255,.04)}
+    #turnIndicator{font-weight:700}
 
-    #scoreboard{text-align:center;font-weight:700;font-size:1.05rem;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    #turnIndicator{text-align:center;font-weight:600;color:var(--text-dim)}
+    .gameGrid{display:grid; gap:14px; grid-template-columns:1fr; align-items:start}
+    @media (min-width:1024px){ .gameGrid{grid-template-columns: 1.25fr .75fr} }
 
-    .leftCol{display:flex;flex-direction:column;gap:12px}
+    .leftCol{display:flex; flex-direction:column; gap:12px}
     #hangman{
-      width:100%;background:#0f0f13;border:1px solid var(--line);border-radius:var(--radius-lg);
-      max-height:42dvh;min-height:260px
+      width:100%; background:#0f0f13; border:1px solid var(--line); border-radius:var(--radius-lg);
+      max-height:44dvh; min-height:270px;
     }
-    #word{text-align:center;letter-spacing:.25em;font-size:1.35rem;margin-top:4px}
+    #word{text-align:center; letter-spacing:.25em; font-size:1.4rem; margin-top:4px}
 
-    #letters{display:grid;gap:10px;margin:10px 0}
-    #letters{grid-template-columns:repeat(12,1fr)}
-    #letters button{font-weight:800}
-    @media (hover:hover) and (pointer:fine){
-      #letters button:hover:not(:disabled){
-        box-shadow:0 0 12px rgba(220,220,220,.5), 0 0 18px rgba(180,180,180,.35);
-        transform:translateY(-3px) scale(1.04)
-      }
-    }
-    #letters button:disabled{filter:saturate(.7)}
+    /* Letters as keycaps */
+    #letters{display:grid; gap:10px; margin:10px 0; grid-template-columns:repeat(12,1fr)}
     @media (max-width:959px){#letters{grid-template-columns:repeat(8,1fr)}}
-    @media (max-width:600px){#letters{grid-template-columns:repeat(7,1fr);margin-bottom:40px}#hangman{max-height:38dvh}}
+    @media (max-width:600px){#letters{grid-template-columns:repeat(7,1fr); margin-bottom:40px}}
     @media (max-width:420px){#letters{grid-template-columns:repeat(6,1fr)}}
-    @media (min-width:960px){
-      #gameMain,#hangman,#letters,#chatWrap,#actions{max-width:1040px;margin:auto}
-      #hangman{max-height:calc(70vh - 180px)}
+    .key{
+      font-weight:800; background: linear-gradient(180deg,#2a2a30,#15151a);
+      border:1px solid #3a3a45; border-bottom:2px solid #0f0f13; border-radius:10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+      transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+      outline:none;
     }
+    .key:hover:not(:disabled){ transform:translateY(-2px) scale(1.02) }
+    .key:active:not(:disabled){ transform: translateY(1px) scale(.995); filter:brightness(1.05) }
+    .key:disabled{opacity:.52; filter:saturate(.5) contrast(.9)}
+    .key:focus-visible{ box-shadow:0 0 0 2px rgba(255,255,255,.3), 0 0 0 4px rgba(130,130,140,.4) }
 
-    /* Timer */
-    #timerBar{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;display:none}
-    #timerFill{height:100%;width:0;background:linear-gradient(90deg,var(--grad-a),var(--grad-b));transition:width .2s,filter .2s}
+    /* Timer bar */
+    #timerBar{width:100%; height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; display:none}
+    #timerFill{height:100%; width:0; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); transition:width .2s, filter .2s}
     .pulse{animation:pulse .8s ease-in-out infinite}
     @keyframes pulse{0%{filter:brightness(1)}50%{filter:brightness(1.5)}100%{filter:brightness(1)}}
 
     .shake{animation:shake .28s ease}
-    @keyframes shake{
-      0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}
-    }
+    @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
 
     /* Right column */
-    .rightCol{display:flex;flex-direction:column;gap:12px}
-    #chatWrap{
-      border:1px solid var(--line);
-      border-radius:var(--radius-lg);
-      background:rgba(255,255,255,.05);
-      padding:10px;display:flex;flex-direction:column;gap:8px;min-height:280px
-    }
-    #chatList{flex:1;max-height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-    .chatMsg{background:rgba(255,255,255,.06);border:1px solid #35353a;border-radius:10px;padding:6px;font-size:.95rem}
-    .chatMeta{font-size:.75rem;color:var(--text-dim);margin-top:2px}
-    .fadeout{opacity:0;transition:opacity .6s}
-    #actions{display:flex;gap:8px;justify-content:center;margin-top:2px;flex-wrap:wrap}
+    .rightCol{display:flex; flex-direction:column; gap:12px}
+    #chatWrap{border:1px solid var(--line); border-radius:var(--radius-lg); background:rgba(255,255,255,.05); padding:10px; display:flex; flex-direction:column; gap:8px; min-height:280px}
+    #chatList{flex:1; max-height:36dvh; overflow-y:auto; display:flex; flex-direction:column; gap:6px}
+    .chatMsg{background:rgba(255,255,255,.06); border:1px solid #35353a; border-radius:10px; padding:6px; font-size:.95rem}
+    .chatMeta{font-size:.75rem; color:var(--text-dim); margin-top:2px}
+    .fadeout{opacity:0; transition:opacity .6s}
+    #actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
 
+    /* Result overlay */
+    .overlay{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.6); z-index:50;
+    }
+    .overlay.show{display:flex; animation:fadeIn .18s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .resultCard{
+      width:min(520px,95vw); background:rgba(24,24,28,.98); border:1px solid #32323a; border-radius:16px; padding:18px;
+      box-shadow:0 16px 38px rgba(0,0,0,.58);
+    }
+    .resultTitle{margin:0 0 6px; font-size:1.3rem; font-weight:700}
+    .resultWord{font-family:ui-monospace,Menlo,Consolas,monospace; letter-spacing:.06em; font-size:1.2rem; margin:8px 0 14px}
+    .actionsRow{display:flex; gap:10px; justify-content:flex-end}
+
+    /* Toasts */
+    .toastWrap{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:60}
+    .toast{
+      background:rgba(20,20,24,.92); color:#fff; padding:.6rem .9rem;
+      border:1px solid #303038; border-radius:10px; transform:translateY(12px); opacity:0; transition:all .18s ease; box-shadow:0 10px 22px rgba(0,0,0,.45)
+    }
+    .toast.in{transform:none; opacity:1}
+
+    /* Settings modal */
+    .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:70}
+    .modal.show{display:flex}
+    .modalCard{width:min(560px,95vw); background:#1b1b20; border:1px solid #34343c; border-radius:16px; padding:16px}
+    .modalHeader{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
+    .modalHeader h3{margin:0; font-size:1.15rem}
+    .settingRow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.05)}
+    .settingRow:last-child{border-bottom:none}
   </style>
 </head>
 <body>
-  <div class="shell">
-    <!-- Top bar (available everywhere) -->
+  <!-- Background (parallax + particles) -->
+  <div class="bg">
+    <canvas id="bgParticles" aria-hidden="true"></canvas>
+    <div id="bgVignette" aria-hidden="true"></div>
+  </div>
+
+  <!-- Cinematic stinger -->
+  <div class="stinger" id="stinger" aria-hidden="true">
+    <div class="logo"></div>
+  </div>
+
+  <div class="shell" id="shell">
+    <!-- Top bar -->
     <div class="topbar">
       <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
+        <div class="cube" aria-hidden="true"></div>
         <h1 class="title" id="appTitle">HÄNGA GUBBE</h1>
       </div>
       <div class="topbar-right">
         <div id="share"></div>
-        <!-- Live language switch (works pre-game and in-game) -->
-        <label class="hidden" for="langGlobal" id="langTopLabel">Language</label>
-        <select id="langGlobal" aria-labelledby="langTopLabel">
-          <option value="sv">Svenska</option>
-          <option value="en">English</option>
+        <button id="openSettings" title="Settings">⚙️</button>
+        <select id="langGlobal" aria-label="Language">
+          <option value="sv">Svenska</option><option value="en">English</option>
         </select>
         <button id="backBtnTop" class="hidden">⬅️ Back</button>
       </div>
     </div>
 
-    <!-- Start screen -->
-    <div id="start" class="card">
+    <!-- Start -->
+    <div id="start" class="card" role="region" aria-label="Start">
       <div class="startGrid">
         <div>
           <label for="playerName" id="nameLabel">Ditt namn</label>
-          <input id="playerName" maxlength="24"/>
-        </div>
-        <div class="hidden">
-          <!-- (kept for accessibility; global switcher controls language now) -->
-          <label for="lang" id="langLabel">Språk / Language</label>
-          <select id="lang">
-            <option value="sv">Svenska</option>
-            <option value="en">English</option>
-          </select>
+          <input id="playerName" maxlength="24" autocomplete="name"/>
         </div>
 
         <div class="row full">
@@ -258,47 +271,59 @@
         </div>
 
         <div id="joinArea" class="row hidden full">
-          <input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10"/>
+          <input id="joinCode" placeholder="Kod (t.ex. ab123)" maxlength="10" autocomplete="off"/>
           <button id="joinGo">Gå med</button>
         </div>
       </div>
     </div>
 
     <!-- Game -->
-    <div id="game" class="card hidden">
+    <div id="game" class="card hidden" role="region" aria-label="Game">
       <div id="lobbyBar">
-        <div class="lobbyItem"><span id="dotHost" class="dot offline"></span>👑 <span id="nameHost">—</span></div>
-        <div class="lobbyItem"><span id="dotGuest" class="dot offline"></span>👤 <span id="nameGuest">⏳ Väntar…</span></div>
+        <div class="lobbyItem">
+          <span id="dotHost" class="dot offline"></span>
+          👑 <span id="nameHost">—</span> <span id="badgeHost" class="badge hidden">Chooser</span>
+        </div>
+        <div class="lobbyItem">
+          <span id="dotGuest" class="dot offline"></span>
+          👤 <span id="nameGuest">⏳ Väntar…</span> <span id="badgeGuest" class="badge hidden">Guesser</span>
+        </div>
         <div id="lobbyMsg" class="lobbyItem">—</div>
       </div>
 
-      <div id="gameMain">
-        <div id="scoreboard">🧑 0 | 👤 0</div>
-        <div id="turnIndicator">⏳ Väntar på tur…</div>
+      <!-- HUD -->
+      <div class="hud">
+        <div class="seg">🧑 <span id="scoreHost">0</span></div>
+        <div class="seg">👤 <span id="scoreGuest">0</span></div>
+        <div class="seg">🏁 <span id="roundLabel">Round 1</span></div>
+        <div class="seg" id="turnIndicator">⏳ Väntar på tur…</div>
+        <div class="seg hidden" id="timerSeg">⏱ <span id="timerSegText">00</span>s</div>
+      </div>
 
+      <div id="gameMain">
         <div class="gameGrid">
           <!-- Left -->
           <div class="leftCol">
-            <canvas id="hangman"></canvas>
-            <div id="word">_</div>
+            <canvas id="hangman" aria-label="Hangman board"></canvas>
+            <div id="word" aria-live="polite">_</div>
 
             <div class="row" id="timerControlsRow" style="justify-content:center;flex-wrap:wrap">
               <button id="timerOpen" class="hidden" style="max-width:220px">⏱ Ställ in timer</button>
               <div id="timerConfig" class="row hidden" style="max-width:520px;width:100%">
-                <input id="timerInput" type="number" min="0" max="100" value="0"/>
-                <button id="timerConfirm">✅</button>
-                <button id="timerCancel">✖</button>
-                <button id="timerOff">🕒 Av</button>
+                <input id="timerInput" type="number" min="0" max="100" value="0" aria-label="Timer seconds"/>
+                <button id="timerConfirm" title="Confirm timer">✅</button>
+                <button id="timerCancel" title="Cancel timer">✖</button>
+                <button id="timerOff" title="Timer off">🕒 Av</button>
               </div>
             </div>
 
             <div id="timerBar"><div id="timerFill"></div></div>
-            <div id="letters"></div>
+            <div id="letters" role="grid" aria-label="Letters"></div>
           </div>
 
           <!-- Right -->
           <div class="rightCol">
-            <div id="chatWrap">
+            <div id="chatWrap" aria-label="Chat">
               <div id="chatList"></div>
               <div class="row">
                 <input id="chatText" placeholder="Skriv ett meddelande..." maxlength="200"/>
@@ -314,19 +339,58 @@
       </div>
     </div>
 
-    <!-- Name modal -->
-    <div id="nameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px">
-      <div style="width:min(440px,92vw);background:rgba(20,20,24,.97);border:1px solid #333;border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.6)">
-        <h2 id="nameModalTitle" style="margin:0 0 8px;font-size:1.1rem">Välj ett namn</h2>
-        <p id="nameModalDesc" style="margin:0 0 10px;color:#bdbdbd;font-size:.95rem">Du måste ange ett namn för att gå vidare.</p>
-        <input id="nameModalInput" maxlength="24" style="width:100%;font-family:inherit;font-size:1rem;border-radius:12px;border:1px solid #333;padding:.8rem 1rem;background:#222;color:#fff"/>
-        <div class="row" style="margin-top:10px"><button id="nameModalConfirm">OK</button></div>
+    <!-- Result overlay -->
+    <div class="overlay" id="resultOverlay" aria-modal="true" role="dialog">
+      <div class="resultCard">
+        <h3 class="resultTitle" id="resultTitle">—</h3>
+        <div id="resultSubtitle" class="muted"></div>
+        <div class="resultWord"><span id="resultWord">_</span></div>
+        <div class="actionsRow">
+          <button id="resultClose">OK</button>
+          <button id="resultPick" class="hidden">✍️</button>
+        </div>
       </div>
     </div>
+
+    <!-- Settings -->
+    <div class="modal" id="settingsModal" aria-modal="true" role="dialog">
+      <div class="modalCard">
+        <div class="modalHeader">
+          <h3 id="settingsTitle">Settings</h3>
+          <button id="settingsClose">✖</button>
+        </div>
+        <div class="settingRow">
+          <div>Language</div>
+          <select id="langInSettings"><option value="sv">Svenska</option><option value="en">English</option></select>
+        </div>
+        <div class="settingRow">
+          <div>Reduced Motion</div>
+          <input type="checkbox" id="reducedMotion">
+        </div>
+        <div class="settingRow">
+          <div>Particle Quality</div>
+          <select id="particleQuality">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="settingRow">
+          <div>Color Mode</div>
+          <select id="colorMode">
+            <option value="mono">Mono</option>
+            <option value="monoStrong">Mono (High Contrast)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toastWrap" id="toastWrap" aria-live="polite"></div>
   </div>
 
   <script>
-    /* ---------- Firebase ---------- */
+    /* ---------------- Firebase ---------------- */
     const firebaseConfig={
       apiKey:"AIzaSyAN9URR47HIBwIuBP3kSu5Rv_Ys0ef72-Q",
       authDomain:"hangman-6a99e.firebaseapp.com",
@@ -339,202 +403,212 @@
     firebase.initializeApp(firebaseConfig);
     const db=firebase.database();
 
-    /* ---------- DOM ---------- */
-    const startDiv=document.getElementById("start"),
-          gameDiv=document.getElementById("game"),
-          gameMain=document.getElementById("gameMain"),
-          appTitle=document.getElementById("appTitle"),
-          langGlobal=document.getElementById("langGlobal"),
-          backBtnTop=document.getElementById("backBtnTop"),
-          shareEl=document.getElementById("share"),
+    /* ---------------- DOM ---------------- */
+    const shell=document.getElementById('shell');
+    const stinger=document.getElementById('stinger');
+    const bgCanvas=document.getElementById('bgParticles'), bgCtx=bgCanvas.getContext('2d');
 
-          nameInput=document.getElementById("playerName"),
-          nameLabel=document.getElementById("nameLabel"),
-          createBtn=document.getElementById("createBtn"),
-          joinBtn=document.getElementById("joinBtn"),
-          joinArea=document.getElementById("joinArea"),
-          joinCodeInput=document.getElementById("joinCode"),
-          joinGo=document.getElementById("joinGo"),
+    const appTitle=document.getElementById('appTitle');
+    const shareEl=document.getElementById('share');
+    const langGlobal=document.getElementById('langGlobal');
+    const backBtnTop=document.getElementById('backBtnTop');
+    const openSettings=document.getElementById('openSettings');
+    const settingsModal=document.getElementById('settingsModal');
+    const settingsClose=document.getElementById('settingsClose');
+    const langInSettings=document.getElementById('langInSettings');
+    const reducedMotionChk=document.getElementById('reducedMotion');
+    const particleQualitySel=document.getElementById('particleQuality');
+    const colorModeSel=document.getElementById('colorMode');
 
-          nameHost=document.getElementById("nameHost"),
-          nameGuest=document.getElementById("nameGuest"),
-          dotHost=document.getElementById("dotHost"),
-          dotGuest=document.getElementById("dotGuest"),
-          lobbyMsg=document.getElementById("lobbyMsg"),
+    const startDiv=document.getElementById('start');
+    const nameLabel=document.getElementById('nameLabel');
+    const nameInput=document.getElementById('playerName');
+    const createBtn=document.getElementById('createBtn');
+    const joinBtn=document.getElementById('joinBtn');
+    const joinArea=document.getElementById('joinArea');
+    const joinCodeInput=document.getElementById('joinCode');
+    const joinGo=document.getElementById('joinGo');
 
-          scoreEl=document.getElementById("scoreboard"),
-          turnEl=document.getElementById("turnIndicator"),
-          canvas=document.getElementById("hangman"),
-          ctx=canvas.getContext("2d"),
-          wordEl=document.getElementById("word"),
-          lettersEl=document.getElementById("letters"),
-          chatList=document.getElementById("chatList"),
-          chatText=document.getElementById("chatText"),
-          chatSend=document.getElementById("chatSend"),
-          timerOpen=document.getElementById("timerOpen"),
-          timerConfig=document.getElementById("timerConfig"),
-          timerInput=document.getElementById("timerInput"),
-          timerConfirm=document.getElementById("timerConfirm"),
-          timerCancel=document.getElementById("timerCancel"),
-          timerOff=document.getElementById("timerOff"),
-          timerBar=document.getElementById("timerBar"),
-          timerFill=document.getElementById("timerFill"),
-          newWordBtn=document.getElementById("newWordBtn"),
-          backBtn=document.getElementById("backBtn"),
-          nameModal=document.getElementById("nameModal"),
-          nameModalInput=document.getElementById("nameModalInput"),
-          nameModalConfirm=document.getElementById("nameModalConfirm");
+    const gameDiv=document.getElementById('game');
+    const lobbyMsg=document.getElementById('lobbyMsg');
+    const nameHost=document.getElementById('nameHost');
+    const nameGuest=document.getElementById('nameGuest');
+    const dotHost=document.getElementById('dotHost');
+    const dotGuest=document.getElementById('dotGuest');
+    const badgeHost=document.getElementById('badgeHost');
+    const badgeGuest=document.getElementById('badgeGuest');
 
-    /* ---------- State ---------- */
-    const params=new URLSearchParams(location.search),deepLinkGame=params.get("game");
+    const scoreHostEl=document.getElementById('scoreHost');
+    const scoreGuestEl=document.getElementById('scoreGuest');
+    const roundLabel=document.getElementById('roundLabel');
+    const turnIndicator=document.getElementById('turnIndicator');
+    const timerSeg=document.getElementById('timerSeg');
+    const timerSegText=document.getElementById('timerSegText');
+
+    const canvas=document.getElementById('hangman'), ctx=canvas.getContext('2d');
+    const wordEl=document.getElementById('word');
+    const lettersEl=document.getElementById('letters');
+    const chatList=document.getElementById('chatList');
+    const chatText=document.getElementById('chatText');
+    const chatSend=document.getElementById('chatSend');
+    const newWordBtn=document.getElementById('newWordBtn');
+    const backBtn=document.getElementById('backBtn');
+
+    const timerOpen=document.getElementById('timerOpen');
+    const timerConfig=document.getElementById('timerConfig');
+    const timerInput=document.getElementById('timerInput');
+    const timerConfirm=document.getElementById('timerConfirm');
+    const timerCancel=document.getElementById('timerCancel');
+    const timerOff=document.getElementById('timerOff');
+    const timerBar=document.getElementById('timerBar');
+    const timerFill=document.getElementById('timerFill');
+
+    const resultOverlay=document.getElementById('resultOverlay');
+    const resultTitle=document.getElementById('resultTitle');
+    const resultSubtitle=document.getElementById('resultSubtitle');
+    const resultWordEl=document.getElementById('resultWord');
+    const resultClose=document.getElementById('resultClose');
+    const resultPick=document.getElementById('resultPick');
+
+    const toastWrap=document.getElementById('toastWrap');
+
+    /* ---------------- State ---------------- */
+    const params=new URLSearchParams(location.search),deepLinkGame=params.get('game');
     const letters=[..."ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ"];
-    let gameId="",isHost=!1,nickname="",lang=localStorage.getItem("lang")||"sv",timerSeconds=0,roundStartMs=0,rafTimer=null,currentWrong=0,lastUpdateKey="";
+    let gameId="",isHost=false,nickname="",lang=localStorage.getItem('lang')||'sv';
+    let timerSeconds=0,roundStartMs=0,rafTimer=null,currentWrong=0,lastUpdateKey="",lastTurnCached=null;
+    let awaitingWordBy=null;
+    let reducedMotion=JSON.parse(localStorage.getItem('reducedMotion')||'false');
+    let particleQuality=localStorage.getItem('particleQuality')||'high';
+    let colorMode=localStorage.getItem('colorMode')||'mono';
+
     const T={
-      sv:{
-        appTitle:"HÄNGA GUBBE",
-        nameLabel:"Ditt namn",
-        enterWord:"Ange ett ord att spela med:",
-        notFound:"Spelet hittades inte.",
-        notYourTurn:"Inte din tur!",
-        share:"Spelkod:",
-        loading:"Laddar spel…",
-        yourTurn:"🎯 Din tur!",
-        oppTurn:"⏳ Motståndarens tur…",
-        timeRanOut:"⏰ Tiden tog slut!",
-        hostWon:"🎉 Värden vann!",
-        guestWon:"🎉 Gästen vann!",
-        joinCodeMissing:"Ange spelkod.",
-        confirmBack:"Är du säker på att du vill lämna och radera spelet?",
-        waiting:"⏳ Väntar på spelare…",
-        bothIn:"🎮 Båda spelare anslutna!",
-        chooseWordCta:"✍️ Välj nytt ord",
-        back:"⬅️ Tillbaka",
-        create:"🆕 Skapa spel",
-        join:"🔗 Gå med i spel",
-        joinGo:"Gå med",
-        joinPlaceholder:"Kod (t.ex. ab123)",
-        chatPlaceholder:"Skriv ett meddelande...",
-        chatSend:"Skicka",
-        timerOpen:"⏱ Ställ in timer",
-        timerOff:"🕒 Av",
-        modalTitle:"Välj ett namn",
-        modalDesc:"Du måste ange ett namn för att gå vidare.",
-        modalPlaceholder:"Ditt namn",
-        chooserOnly:"Bara ordgivaren kan starta nästa runda.",
-        roundNotOver:"Rundan är inte slut än."
+      sv:{ appTitle:"HÄNGA GUBBE", nameLabel:"Ditt namn", enterWord:"Ange ett ord att spela med:",
+        notFound:"Spelet hittades inte.", joinCodeMissing:"Ange spelkod.",
+        share:"Spelkod:", loading:"Laddar spel…", yourTurn:"🎯 Din tur!", oppTurn:"⏳ Motståndarens tur…",
+        timeRanOut:"⏰ Tiden tog slut!", hostWon:"🎉 Värden vann!", guestWon:"🎉 Gästen vann!",
+        waiting:"⏳ Väntar på spelare…", bothIn:"🎮 Båda spelare anslutna!",
+        chooseWordCta:"✍️ Välj nytt ord", back:"⬅️ Tillbaka",
+        create:"🆕 Skapa spel", join:"🔗 Gå med i spel", joinGo:"Gå med", joinPlaceholder:"Kod (t.ex. ab123)",
+        chatPlaceholder:"Skriv ett meddelande...", chatSend:"Skicka", timerOpen:"⏱ Ställ in timer", timerOff:"🕒 Av",
+        modalTitle:"Välj ett namn", modalDesc:"Du måste ange ett namn för att gå vidare.", modalPlaceholder:"Ditt namn",
+        chooserOnly:"Bara ordgivaren kan starta nästa runda.", roundNotOver:"Rundan är inte slut än.",
+        round:"Runda", resultWon:"Du vann!", resultLost:"Du förlorade", resultOppWon:"Motståndaren vann",
+        roleChooser:"Ordgivare", roleGuesser:"Gissare",
+        ok:"OK"
       },
-      en:{
-        appTitle:"HANGMAN",
-        nameLabel:"Your name",
-        enterWord:"Enter a word to start:",
-        notFound:"Game not found.",
-        notYourTurn:"Not your turn!",
-        share:"Game code:",
-        loading:"Loading game…",
-        yourTurn:"🎯 Your turn!",
-        oppTurn:"⏳ Opponent's turn…",
-        timeRanOut:"⏰ Time ran out!",
-        hostWon:"🎉 Host won!",
-        guestWon:"🎉 Guest won!",
-        joinCodeMissing:"Enter a game code.",
-        confirmBack:"Are you sure you want to leave and delete the game?",
-        waiting:"⏳ Waiting for player…",
-        bothIn:"🎮 Both players connected!",
-        chooseWordCta:"✍️ Pick new word",
-        back:"⬅️ Back",
-        create:"🆕 Create game",
-        join:"🔗 Join game",
-        joinGo:"Join",
-        joinPlaceholder:"Code (e.g. ab123)",
-        chatPlaceholder:"Type a message...",
-        chatSend:"Send",
-        timerOpen:"⏱ Set timer",
-        timerOff:"🕒 Off",
-        modalTitle:"Choose a name",
-        modalDesc:"You must enter a name to continue.",
-        modalPlaceholder:"Your name",
-        chooserOnly:"Only the word chooser can start the next round.",
-        roundNotOver:"Round not over."
+      en:{ appTitle:"HANGMAN", nameLabel:"Your name", enterWord:"Enter a word to start:",
+        notFound:"Game not found.", joinCodeMissing:"Enter a game code.",
+        share:"Game code:", loading:"Loading game…", yourTurn:"🎯 Your turn!", oppTurn:"⏳ Opponent's turn…",
+        timeRanOut:"⏰ Time ran out!", hostWon:"🎉 Host won!", guestWon:"🎉 Guest won!",
+        waiting:"⏳ Waiting for player…", bothIn:"🎮 Both players connected!",
+        chooseWordCta:"✍️ Pick new word", back:"⬅️ Back",
+        create:"🆕 Create game", join:"🔗 Join game", joinGo:"Join", joinPlaceholder:"Code (e.g. ab123)",
+        chatPlaceholder:"Type a message...", chatSend:"Send", timerOpen:"⏱ Set timer", timerOff:"🕒 Off",
+        modalTitle:"Choose a name", modalDesc:"You must enter a name to continue.", modalPlaceholder:"Your name",
+        chooserOnly:"Only the word chooser can start the next round.", roundNotOver:"Round not over.",
+        round:"Round", resultWon:"You won!", resultLost:"You lost", resultOppWon:"Opponent won",
+        roleChooser:"Chooser", roleGuesser:"Guesser",
+        ok:"OK"
       }
     };
 
-    /* ---------- i18n ---------- */
+    /* ---------------- Utils ---------------- */
+    const $esc = s=>(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
+    const gameCode=()=> (gameId||"").replace(/^hangman-/,"");
+    const toast=(msg)=>{ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; toastWrap.appendChild(t); requestAnimationFrame(()=>t.classList.add('in')); setTimeout(()=>t.classList.remove('in'),1800); setTimeout(()=>t.remove(),2000) };
+
+    function vibrate(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms) }catch{} }
+
+    /* ---------------- Parallax + Particles ---------------- */
+    function sizeBg(){ bgCanvas.width=innerWidth; bgCanvas.height=innerHeight }
+    let particles=[];
+    function initParticles(){
+      sizeBg();
+      const count = particleQuality==='high' ? 120 : particleQuality==='medium' ? 70 : 35;
+      particles=new Array(count).fill(0).map(()=>({
+        x:Math.random()*bgCanvas.width,
+        y:Math.random()*bgCanvas.height,
+        r:Math.random()*1.6+0.4,
+        vx:(Math.random()-.5)*0.25,
+        vy:(Math.random()-.5)*0.25,
+        a:Math.random()*0.5+0.2
+      }));
+    }
+    function tickParticles(){
+      if(reducedMotion){ bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height); return requestAnimationFrame(tickParticles) }
+      bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+      bgCtx.save(); bgCtx.globalCompositeOperation='lighter';
+      for(const p of particles){
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>bgCanvas.width) p.vx*=-1;
+        if(p.y<0||p.y>bgCanvas.height) p.vy*=-1;
+        bgCtx.fillStyle=`rgba(200,200,210,${p.a})`;
+        bgCtx.beginPath(); bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2); bgCtx.fill();
+      }
+      bgCtx.restore();
+      requestAnimationFrame(tickParticles);
+    }
+    window.addEventListener('resize',()=>{ sizeBg(); initParticles() });
+    document.addEventListener('mousemove', (e)=>{
+      const dx = (e.clientX / innerWidth - .5)*2;
+      const dy = (e.clientY / innerHeight - .5)*2;
+      bgCanvas.style.transform = `translate(${dx*6}px, ${dy*6}px)`;
+    }, {passive:true});
+
+    /* ---------------- i18n ---------------- */
+    function updateShareText(){
+      const L=T[lang]; const code=gameCode()||"—";
+      shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>`;
+      backBtnTop.classList.toggle('hidden', !gameId);
+    }
     function applyLang(){
       const L=T[lang];
       document.documentElement.lang = (lang==='sv'?'sv':'en');
       appTitle.textContent = L.appTitle;
-
-      // Start screen
       nameLabel.textContent = L.nameLabel;
       createBtn.textContent = L.create;
       joinBtn.textContent = L.join;
       joinGo.textContent = L.joinGo;
       joinCodeInput.placeholder = L.joinPlaceholder;
-
-      // Game UI
       newWordBtn.textContent = L.chooseWordCta;
       backBtn.textContent = L.back;
       chatText.placeholder = L.chatPlaceholder;
       chatSend.textContent = L.chatSend;
-      document.getElementById("timerOpen").textContent = L.timerOpen;
-      document.getElementById("timerOff").textContent = L.timerOff;
-
-      // Name modal
-      document.getElementById("nameModalTitle").textContent = L.modalTitle;
-      document.getElementById("nameModalDesc").textContent = L.modalDesc;
-      nameModalInput.placeholder = L.modalPlaceholder;
-
-      // Topbar back label based on language/state
-      backBtnTop.textContent = (lang==='sv') ? "⬅️ Tillbaka" : "⬅️ Back";
-
-      // Refresh code chip text
+      timerOpen.textContent = L.timerOpen;
+      timerOff.textContent = L.timerOff;
+      resultClose.textContent = L.ok;
+      document.getElementById('settingsTitle').textContent = (lang==='sv')?'Inställningar':'Settings';
       updateShareText();
-      updateLobbyTextWaiting();
-      updateTurnLabel(lastTurnCached);
+      if(!nameGuest.dataset.hasGuest || nameGuest.dataset.hasGuest==="0"){ nameGuest.textContent = L.waiting }
+      if(lastTurnCached) setTurn(lastTurnCached);
+      updateRoleBadges();
+      updateRoundLabel();
     }
-    function updateLobbyTextWaiting(){
-      const hasGuest = nameGuest.dataset.hasGuest==="1";
-      if(!hasGuest) nameGuest.textContent = T[lang].waiting;
-    }
+    langGlobal.value=lang;
+    langGlobal.onchange=()=>{ lang=langGlobal.value; localStorage.setItem('lang',lang); langInSettings.value=lang; applyLang() };
 
-    langGlobal.value = lang;
-    langGlobal.onchange = ()=>{
-      lang = langGlobal.value;
-      localStorage.setItem("lang", lang);
-      applyLang();
-    };
+    /* ---------------- Settings ---------------- */
+    openSettings.onclick=()=>settingsModal.classList.add('show');
+    settingsClose.onclick=()=>settingsModal.classList.remove('show');
+    langInSettings.onchange=()=>{ langGlobal.value = langInSettings.value; langGlobal.onchange() };
+    reducedMotionChk.checked = reducedMotion;
+    reducedMotionChk.onchange=()=>{ reducedMotion = reducedMotionChk.checked; localStorage.setItem('reducedMotion', JSON.stringify(reducedMotion)) };
+    particleQualitySel.value = particleQuality;
+    particleQualitySel.onchange=()=>{ particleQuality = particleQualitySel.value; localStorage.setItem('particleQuality', particleQuality); initParticles() };
+    colorModeSel.value = colorMode;
+    colorModeSel.onchange=()=>{ colorMode = colorModeSel.value; localStorage.setItem('colorMode', colorMode); /* still grayscale; reserved for variant tweaks */ };
 
-    // Keep hidden legacy #lang (if any) in sync for safety
-    const hiddenStartLang = document.getElementById("lang");
-    if(hiddenStartLang){ hiddenStartLang.value = lang; hiddenStartLang.onchange = ()=>{ langGlobal.value = hiddenStartLang.value; langGlobal.onchange() } }
-
-    /* ---------- Helpers ---------- */
-    const escapeH=s=>(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
-    const gameCode=()=> (gameId||"").replace(/^hangman-/,"");
-
-    function requireNickname(){
-      let stored=(nameInput.value||localStorage.getItem("nickname")||"").trim();
-      if(stored){ nameInput.value=stored; localStorage.setItem("nickname",stored); return Promise.resolve(stored) }
-      return new Promise(res=>{
-        nameModal.style.display="flex"; nameModalInput.value="";
-        setTimeout(()=>nameModalInput.focus(),40);
-        function done(){
-          let v=(nameModalInput.value||"").trim(); if(!v)return;
-          nameModal.style.display="none"; nameInput.value=v; localStorage.setItem("nickname",v); res(v)
-        }
-        nameModalConfirm.onclick=done; nameModalInput.onkeydown=e=>{"Enter"===e.key&&done()}
-      })
-    }
-
+    /* ---------------- Presence / Lobby ---------------- */
     function updateLobby(p={},pr={}){
       nameHost.textContent=p.host||"—";
-      const hasGuest = !!p.guest;
-      nameGuest.textContent=hasGuest ? p.guest : T[lang].waiting;
-      nameGuest.dataset.hasGuest = hasGuest ? "1" : "0";
+      const hasGuest=!!p.guest;
+      nameGuest.textContent=hasGuest? p.guest : T[lang].waiting;
+      nameGuest.dataset.hasGuest = hasGuest ? "1":"0";
       const h=!!pr.host,g=!!pr.guest;
-      dotHost.classList.toggle("online",h); dotHost.classList.toggle("offline",!h);
-      dotGuest.classList.toggle("online",g); dotGuest.classList.toggle("offline",!g);
-      lobbyMsg.textContent=(p.host&&p.guest)?T[lang].bothIn:T[lang].waiting
+      dotHost.classList.toggle('online',h); dotHost.classList.toggle('offline',!h);
+      dotGuest.classList.toggle('online',g); dotGuest.classList.toggle('offline',!g);
+      lobbyMsg.textContent=(p.host&&p.guest)?T[lang].bothIn:T[lang].waiting;
     }
     function setupPresence(role){
       firebase.database().ref(".info/connected").on("value",s=>{
@@ -544,17 +618,16 @@
       })
     }
 
-    /* ---------- Canvas ---------- */
+    /* ---------------- Canvas: Hangman ---------------- */
     function resizeCanvas(){
-      const w=Math.min(900,Math.floor(gameMain.clientWidth));
-      const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.7)-180));
-      canvas.width=Math.max(260,Math.min(w,900));
+      const w=Math.min(980,Math.floor(document.body.clientWidth - 64));
+      const h=Math.floor(Math.min(w*1.25,(window.innerHeight*0.72)-180));
+      canvas.width=Math.max(260,Math.min(w,980));
       canvas.height=Math.max(260,h);
       drawAll(currentWrong);
-      canvas.style.maxWidth="100%"; canvas.style.height="auto"
+      canvas.style.maxWidth="100%"; canvas.style.height="auto";
     }
-    window.addEventListener("resize",()=>setTimeout(resizeCanvas,60));
-
+    window.addEventListener('resize',()=>setTimeout(resizeCanvas,60));
     const grad=()=>{
       const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
       const styles=getComputedStyle(document.documentElement);
@@ -566,10 +639,12 @@
     function drawAll(w){
       const cw=canvas.width,ch=canvas.height,sX=cw/200,sY=ch/250,lw=2*Math.min(sX,sY);
       ctx.clearRect(0,0,cw,ch); ctx.lineWidth=lw; ctx.strokeStyle=grad();
-      ctx.beginPath(); // gallows
+      // gallows
+      ctx.beginPath();
       ctx.moveTo(10*sX,240*sY);ctx.lineTo(190*sX,240*sY);
       ctx.moveTo(50*sX,240*sY);ctx.lineTo(50*sX,20*sY);ctx.lineTo(130*sX,20*sY);ctx.lineTo(130*sX,50*sY);
       ctx.stroke();
+      // animated parts
       if(w>0){ctx.beginPath();ctx.arc(130*sX,70*sY,20*sX,0,Math.PI*2);ctx.stroke()}
       if(w>1){ctx.beginPath();ctx.moveTo(130*sX,90*sY);ctx.lineTo(130*sX,160*sY);ctx.stroke()}
       if(w>2){ctx.beginPath();ctx.moveTo(130*sX,110*sY);ctx.lineTo(100*sX,140*sY);ctx.stroke()}
@@ -578,171 +653,251 @@
       if(w>5){ctx.beginPath();ctx.moveTo(130*sX,160*sY);ctx.lineTo(150*sX,200*sY);ctx.stroke()}
     }
     function setWordDisplay(word,guesses){
-      wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" ")
+      wordEl.textContent=word.split("").map(l=>guesses.includes(l)?l:"_").join(" ");
     }
 
-    /* ---------- Letters ---------- */
+    /* ---------------- Letters (UI + keyboard nav) ---------------- */
     function buildLetters(){
       lettersEl.innerHTML="";
-      letters.forEach(ch=>{
-        const b=document.createElement("button");
-        b.textContent=ch;
-        b.dataset.letter=ch;
-        b.onclick=onGuess;
-        lettersEl.appendChild(b)
-      })
+      letters.forEach((ch,idx)=>{
+        const b=document.createElement('button');
+        b.textContent=ch; b.className='key'; b.setAttribute('role','gridcell'); b.dataset.index=idx;
+        b.onclick=onGuess; lettersEl.appendChild(b);
+      });
     }
-
-    async function onGuess(){
-      const ch=this.textContent;
-      const snap=await db.ref("games/"+gameId).get(),d=snap.val();
-      if(!d || d.over || d.awaitingWordBy){ return }
-      const mine=isHost?"host":"guest";
-      if(d.turn!==mine){ return }
-      if((d.guesses||[]).includes(ch))return;
-
-      let newGuesses=[...(d.guesses||[]),ch],newWrong=d.wrong||0,over=!1,winner=null;
-      const scores={...(d.scores||{host:0,guest:0})};
-      const isWrong=!d.word.includes(ch);
-      if(isWrong){
-        newWrong++; canvas.classList.add("shake"); setTimeout(()=>canvas.classList.remove("shake"),300)
-      }
-      const solved=d.word.split("").every(l=>newGuesses.includes(l));
-      if(solved){ over=!0; winner=mine; scores[mine]=(scores[mine]||0)+1 }
-      else if(newWrong>=6){ over=!0; const opp=mine==="host"?"guest":"host"; winner=opp; scores[opp]=(scores[opp]||0)+1 }
-
-      const patch={guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP};
-      if(over){ patch.awaitingWordBy = mine } // current guesser chooses next
-      await db.ref("games/"+gameId).update(patch)
+    function focusKey(index){
+      const btn=lettersEl.querySelector(`button[data-index="${index}"]`);
+      if(btn && !btn.disabled){ btn.focus() }
     }
+    lettersEl.addEventListener('keydown', (e)=>{
+      const colCount = getComputedStyle(lettersEl).gridTemplateColumns.split(' ').length;
+      const total = letters.length;
+      const active=document.activeElement;
+      const cur = active && active.dataset ? parseInt(active.dataset.index,10) : 0;
+      if(isNaN(cur)) return;
+      let next = cur;
+      if(e.key==='ArrowRight') next = (cur+1)%total;
+      else if(e.key==='ArrowLeft') next = (cur-1+total)%total;
+      else if(e.key==='ArrowDown') next = (cur+colCount)%total;
+      else if(e.key==='ArrowUp') next = (cur-colCount+total)%total;
+      else if(e.key===' ' || e.key==='Enter'){ active.click(); return }
+      else return;
+      e.preventDefault(); focusKey(next);
+    });
 
-    /* ---------- Timer ---------- */
-    function stopTimerLoop(){ if(rafTimer)cancelAnimationFrame(rafTimer); rafTimer=null }
+    /* ---------------- Timer ---------------- */
+    function stopTimerLoop(){ if(rafTimer) cancelAnimationFrame(rafTimer); rafTimer=null }
     function timerLoop(){
       stopTimerLoop();
-      if(timerSeconds<=0||!roundStartMs){ timerBar.style.display="none"; return }
-      timerBar.style.display="block";
+      if(timerSeconds<=0 || !roundStartMs){ timerBar.style.display="none"; timerSeg.classList.add('hidden'); return }
+      timerBar.style.display="block"; timerSeg.classList.remove('hidden');
       const tick=async()=>{
-        const now=Date.now(),remainMs=Math.max(0,timerSeconds*1000-Math.max(0,now-roundStartMs)),pct=Math.max(0,Math.min(1,remainMs/(timerSeconds*1000)));
-        timerFill.style.width=pct*100+"%"; timerFill.classList.toggle("pulse",remainMs<=3000);
+        const now=Date.now(), remainMs=Math.max(0,timerSeconds*1000 - Math.max(0,now-roundStartMs));
+        const pct=Math.max(0,Math.min(1,remainMs/(timerSeconds*1000)));
+        timerFill.style.width = (pct*100)+"%"; timerFill.classList.toggle('pulse', remainMs<=3000);
+        timerSegText.textContent = Math.ceil(remainMs/1000);
         if(remainMs<=0){
-          const snap=await db.ref("games/"+gameId).get(),d=snap.val();
+          const snap=await db.ref("games/"+gameId).get(), d=snap.val();
           if(d && !d.over){
-            const opp=("host"===d.turn)?"guest":"host",scores={...(d.scores||{})};
+            const opp = (d.turn==='host')?'guest':'host', scores={...(d.scores||{})};
             scores[opp]=(scores[opp]||0)+1;
-            await db.ref("games/"+gameId).update({over:!0,scores,winner:opp,awaitingWordBy:d.turn});
-            addChat({name:"System",text:(lang==="sv")?T.sv.timeRanOut:T.en.timeRanOut,ts:Date.now()})
+            await db.ref("games/"+gameId).update({over:true,scores,winner:opp,awaitingWordBy:d.turn});
+            addChat({name:"System",text:(lang==='sv')?T.sv.timeRanOut:T.en.timeRanOut,ts:Date.now()});
+            showResultOverlay(d.word, opp);
           }
-          timerBar.style.display="none"; return
+          timerBar.style.display="none"; timerSeg.classList.add('hidden'); return
         }
         rafTimer=requestAnimationFrame(tick)
       };
       rafTimer=requestAnimationFrame(tick)
     }
 
-    /* ---------- Chat ---------- */
+    /* ---------------- Chat ---------------- */
     function pushChat(m){ db.ref("games/"+gameId+"/chat").push({name:nickname,text:m,ts:Date.now()}) }
-    chatSend.onclick=()=>{ const v=chatText.value.trim(); if(!v)return; chatText.value=""; pushChat(v) };
-    chatText.onkeydown=e=>{"Enter"===e.key&&chatSend.click()};
+    chatSend.onclick=()=>{ const v=chatText.value.trim(); if(!v) return; chatText.value=""; pushChat(v) };
+    chatText.onkeydown=e=>{ if(e.key==='Enter') chatSend.click() };
     function addChat(o){
-      const wrap=document.createElement("div");
-      wrap.className="chatMsg";
-      wrap.innerHTML=`<div><b>${escapeH(o.name||"??")}</b>: ${escapeH(o.text||"")}</div><div class="chatMeta">${new Date(o.ts||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`;
+      const wrap=document.createElement('div'); wrap.className='chatMsg';
+      wrap.innerHTML = `<div><b>${$esc(o.name||"??")}</b>: ${$esc(o.text||"")}</div><div class="chatMeta">${new Date(o.ts||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`;
       chatList.appendChild(wrap); chatList.scrollTop=chatList.scrollHeight;
-      setTimeout(()=>wrap.classList.add("fadeout"),15000); setTimeout(()=>wrap.remove(),16500)
+      setTimeout(()=>wrap.classList.add('fadeout'),15000); setTimeout(()=>wrap.remove(),16500);
     }
 
-    let lastTurnCached=null;
-    function updateTurnLabel(turn){
-      if(!turn) return;
-      const mine=isHost?"host":"guest";
-      turnEl.textContent=(turn===mine)?((lang==="sv")?T.sv.yourTurn:T.en.yourTurn):((lang==="sv")?T.sv.oppTurn:T.en.oppTurn);
-      turnEl.style.opacity=".3"; setTimeout(()=>turnEl.style.opacity="1",120)
+    /* ---------------- Turn / Roles ---------------- */
+    function setTurn(turn){
+      lastTurnCached=turn;
+      const mine=isHost?'host':'guest';
+      const text = (turn===mine) ? ((lang==='sv')?T.sv.yourTurn:T.en.yourTurn) : ((lang==='sv')?T.sv.oppTurn:T.en.oppTurn);
+      turnIndicator.textContent = text;
+      turnRibbon(text);
+    }
+    function updateRoleBadges(){
+      // chooser badge based on awaitingWordBy; during active round, the guesser is "turn"
+      const mine=isHost?'host':'guest';
+      const chooser = awaitingWordBy;
+      badgeHost.classList.toggle('hidden', !(chooser==='host'));
+      badgeGuest.classList.toggle('hidden', !(chooser==='guest'));
+      // translate badge text
+      const L=T[lang];
+      badgeHost.textContent = chooser==='host' ? L.roleChooser : L.roleGuesser;
+      badgeGuest.textContent = chooser==='guest' ? L.roleChooser : L.roleGuesser;
+    }
+    function turnRibbon(text){
+      const r=document.createElement('div');
+      r.style.position='fixed'; r.style.left='50%'; r.style.top='14px';
+      r.style.transform='translateX(-50%) translateY(-20px)';
+      r.style.background='rgba(20,20,24,.95)'; r.style.color='#fff';
+      r.style.padding='.4rem .8rem'; r.style.border='1px solid #333'; r.style.borderRadius='10px';
+      r.style.boxShadow='0 10px 22px rgba(0,0,0,.45)'; r.style.zIndex='40'; r.textContent=text;
+      document.body.appendChild(r);
+      requestAnimationFrame(()=>r.style.transform='translateX(-50%) translateY(0)');
+      setTimeout(()=>{ r.style.transition='transform .2s ease, opacity .2s ease'; r.style.opacity='0'; r.style.transform='translateX(-50%) translateY(-12px)' }, 900);
+      setTimeout(()=>r.remove(), 1150);
     }
 
-    /* ---------- UI enable/disable ---------- */
-    function setLettersEnabled(enabled){
-      lettersEl.querySelectorAll("button").forEach(b=>b.disabled=!enabled || b.dataset.used==="1")
+    /* ---------------- Result overlay ---------------- */
+    function showResultOverlay(word, winnerRole){
+      const L=T[lang];
+      resultTitle.textContent = (winnerRole=== (isHost?'host':'guest')) ? L.resultWon : L.resultOppWon;
+      resultSubtitle.textContent = `${L.round} ${getRoundNumber(true)}`;
+      resultWordEl.textContent = word;
+      resultOverlay.classList.add('show');
+
+      // Only chooser can press Pick New Word
+      const mine=isHost?'host':'guest';
+      const amChooser = awaitingWordBy===mine;
+      resultPick.classList.toggle('hidden', !awaitingWordBy);
+      resultPick.disabled = !amChooser;
+      resultPick.textContent = L.chooseWordCta;
+
+      resultClose.onclick=()=> resultOverlay.classList.remove('show');
+      resultPick.onclick=()=> newWordBtn.click();
+    }
+
+    /* ---------------- Achievements (local) ---------------- */
+    const Ach={
+      load(){ try{return JSON.parse(localStorage.getItem('ach')||'{}')}catch{return{}} },
+      save(a){ localStorage.setItem('ach', JSON.stringify(a)) },
+      bump(key){ const a=Ach.load(); if(!a[key]){ a[key]=Date.now(); Ach.save(a); toast(key) } }
+    };
+
+    /* ---------------- Game Logic ---------------- */
+    function updateShareAndUI(){ updateShareText(); resizeCanvas(); buildLetters() }
+
+    function updateLettersEnabled(enabled){
+      lettersEl.querySelectorAll('button').forEach(b=>{
+        if(b.dataset.used==='1'){ b.disabled=true; return }
+        b.disabled=!enabled;
+      });
     }
     function setAllInteractiveDisabled(disabled){
-      setLettersEnabled(!disabled);
-      [timerOpen,timerConfirm,timerCancel,timerOff,timerInput].forEach(el=>{ if(el) el.disabled=disabled })
+      updateLettersEnabled(!disabled);
+      [timerOpen,timerConfirm,timerCancel,timerOff,timerInput].forEach(el=>{ if(el) el.disabled=disabled });
     }
 
-    function updateShareText(){
-      const L=T[lang]; const code=gameCode()||"—";
-      shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>`;
-      // Back button in topbar is visible only when inside a game
-      backBtnTop.classList.toggle("hidden", !gameId);
+    function getRoundNumber(includeCurrent){
+      // Completed rounds = scores host+guest; current = +1 if game not over
+      const h=parseInt(scoreHostEl.textContent||'0',10), g=parseInt(scoreGuestEl.textContent||'0',10);
+      const base = h+g;
+      if(includeCurrent){ return base+1 } else { return base }
+    }
+    function updateRoundLabel(){
+      const L=T[lang];
+      roundLabel.textContent = `${L.round} ${getRoundNumber(true)}`;
     }
 
     function showGame(){
-      startDiv.classList.add("hidden"); gameDiv.classList.remove("hidden");
-      resizeCanvas(); buildLetters(); updateShareText();
+      startDiv.classList.add('hidden');
+      gameDiv.classList.remove('hidden');
+      updateShareAndUI();
     }
 
-    /* ---------- Navigation ---------- */
-    function confirmBack(){
-      return confirm(T[lang].confirmBack);
-    }
-    function leaveGame(){
-      if(gameId) db.ref("games/"+gameId).remove();
-      location.href=location.pathname;
-    }
-    backBtn.onclick=()=>{ if(confirmBack()) leaveGame() };
-    backBtnTop.onclick=()=>{ if(confirmBack()) leaveGame() };
+    function confirmLeave(){ return confirm((lang==='sv')?'Är du säker på att du vill lämna och radera spelet?':'Are you sure you want to leave and delete the game?') }
+    function leaveGame(){ if(gameId) db.ref("games/"+gameId).remove(); location.href=location.pathname }
 
-    /* ---------- Create / Join ---------- */
+    backBtn.onclick=()=>{ if(confirmLeave()) leaveGame(); };
+    backBtnTop.onclick=()=>{ if(confirmLeave()) leaveGame(); };
+
     createBtn.onclick=async()=>{
-      nickname=(nameInput.value||"").trim(); if(!nickname)nickname=await requireNickname();
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt((lang==='sv')?T.sv.modalPlaceholder:T.en.modalPlaceholder) || ''; nickname=nickname.trim(); if(!nickname) return; localStorage.setItem('nickname', nickname) }
       const word=(prompt(T[lang].enterWord)||"").toUpperCase();
-      if(!/^[A-ZÅÄÖ]+$/.test(word))return alert("Endast bokstäver A–Ö!");
+      if(!/^[A-ZÅÄÖ]+$/.test(word)) return alert("Endast bokstäver A–Ö!");
       const id="hangman-"+Math.random().toString(36).substr(2,5);
       await db.ref("games/"+id).set({
-        word,guesses:[],wrong:0,turn:"guest",over:!1,
+        word,guesses:[],wrong:0,turn:"guest",over:false,
         players:{host:nickname},scores:{host:0,guest:0},
         settings:{timerSeconds:0},presence:{},roundStartMs:0,
         awaitingWordBy:null
       });
-      isHost=!0; gameId=id; showGame(); setupPresence("host"); listenGame()
+      isHost=true; gameId=id; showGame(); setupPresence('host'); listenGame();
     };
-
-    joinBtn.onclick=()=>joinArea.classList.remove("hidden");
-
+    joinBtn.onclick=()=>joinArea.classList.remove('hidden');
     joinGo.onclick=async()=>{
       const code=(joinCodeInput.value||"").trim();
       if(!code) return alert(T[lang].joinCodeMissing);
-      nickname=(nameInput.value||"").trim(); if(!nickname)nickname=await requireNickname();
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt((lang==='sv')?T.sv.modalPlaceholder:T.en.modalPlaceholder) || ''; nickname=nickname.trim(); if(!nickname) return; localStorage.setItem('nickname', nickname) }
       const id="hangman-"+code;
       const snap=await db.ref("games/"+id).get();
-      if(!snap.exists())return alert(T[lang].notFound);
+      if(!snap.exists()) return alert(T[lang].notFound);
       await db.ref("games/"+id+"/players").update({guest:nickname});
-      isHost=!1; gameId=id; showGame(); setupPresence("guest"); listenGame()
+      isHost=false; gameId=id; showGame(); setupPresence('guest'); listenGame();
     };
 
     (async function directJoin(){
-      if(!deepLinkGame)return;
-      showGame(); nickname=(nameInput.value||"").trim(); if(!nickname)nickname=await requireNickname();
+      if(!deepLinkGame) return;
+      nickname=(nameInput.value||localStorage.getItem('nickname')||'').trim();
+      if(!nickname){ nickname=prompt((lang==='sv')?T.sv.modalPlaceholder:T.en.modalPlaceholder) || ''; nickname=nickname.trim(); if(!nickname) return; localStorage.setItem('nickname', nickname) }
       const snap=await db.ref("games/"+deepLinkGame).get();
-      if(!snap.exists())return leaveGame();
+      if(!snap.exists()) return leaveGame();
       const d=snap.val();
       if(!d.players?.guest){ await db.ref("games/"+deepLinkGame+"/players").update({guest:nickname}) }
-      isHost=!1; gameId=deepLinkGame; setupPresence("guest"); listenGame()
+      isHost=false; gameId=deepLinkGame; showGame(); setupPresence('guest'); listenGame();
     })();
 
-    /* ---------- Game listener ---------- */
+    async function onGuess(){
+      const ch=this.textContent;
+      const snap=await db.ref("games/"+gameId).get(), d=snap.val();
+      if(!d || d.over || d.awaitingWordBy) return;
+      const mine=isHost?'host':'guest';
+      if(d.turn!==mine) return;
+      if((d.guesses||[]).includes(ch)) return;
+
+      let newGuesses=[...(d.guesses||[]),ch], newWrong=d.wrong||0, over=false, winner=null;
+      const scores={...(d.scores||{host:0,guest:0})};
+      const isWrong=!d.word.includes(ch);
+      if(isWrong){
+        newWrong++;
+        canvas.classList.add('shake'); setTimeout(()=>canvas.classList.remove('shake'),300);
+        vibrate(15);
+      } else {
+        Ach.bump((lang==='sv')?'Rätt gissning!':'Correct guess!');
+      }
+      const solved=d.word.split("").every(l=>newGuesses.includes(l));
+      if(solved){ over=true; winner=mine; scores[mine]=(scores[mine]||0)+1; Ach.bump((lang==='sv')?'Perfekt runda!':'Flawless round!') }
+      else if(newWrong>=6){ over=true; const opp=mine==='host'?'guest':'host'; winner=opp; scores[opp]=(scores[opp]||0)+1 }
+
+      const patch={guesses:newGuesses,wrong:newWrong,over,scores,winner,roundStartMs:firebase.database.ServerValue.TIMESTAMP};
+      if(over){ patch.awaitingWordBy = mine }
+      await db.ref("games/"+gameId).update(patch);
+      // mark used locally fast
+      this.disabled=true; this.dataset.used='1';
+    }
+
+    /* ---------------- Listeners ---------------- */
     function listenGame(){
-      if(!gameId)return;
-
+      if(!gameId) return;
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added",s=>addChat(s.val()));
+      db.ref("games/"+gameId).on("value", snap=>{
+        const d=snap.val(); if(!d) return;
 
-      db.ref("games/"+gameId").on("value",snap=>{
-        const d=snap.val(); if(!d)return;
-
-        updateLobby(d.players||{},d.presence||{});
+        updateLobby(d.players||{}, d.presence||{});
+        awaitingWordBy = d.awaitingWordBy || null;
+        updateRoleBadges();
 
         const key=JSON.stringify([d.guesses,d.wrong,d.over,d.turn,d.scores,d.settings,d.roundStartMs,d.winner,d.awaitingWordBy]);
-        if(key===lastUpdateKey) return; lastUpdateKey=key;
+        if(key===lastUpdateKey) { return } lastUpdateKey=key;
 
         timerSeconds=d.settings?.timerSeconds||0; roundStartMs=d.roundStartMs||0;
         (d.over||timerSeconds<=0)?(stopTimerLoop(),timerBar.style.display=(timerSeconds>0&&!d.over)?"block":"none"):timerLoop();
@@ -751,97 +906,105 @@
 
         // used letters
         const used=new Set(d.guesses||[]);
-        lettersEl.querySelectorAll("button").forEach(b=>{
+        lettersEl.querySelectorAll('button').forEach(b=>{
           const usedNow=used.has(b.textContent);
-          b.disabled = usedNow; b.dataset.used=usedNow?"1":"0";
+          b.disabled = usedNow; b.dataset.used=usedNow?'1':'0';
         });
 
-        // scores & turn
-        scoreEl.textContent=`🧑 ${d.scores?.host||0} | 👤 ${d.scores?.guest||0}`;
-        lastTurnCached = d.turn;
-        updateTurnLabel(d.turn);
+        scoreHostEl.textContent = d.scores?.host||0;
+        scoreGuestEl.textContent = d.scores?.guest||0;
+        updateRoundLabel();
+        setTurn(d.turn);
         updateShareText();
 
-        /* ----- Post-round lock + chooser control ----- */
-        const mine=isHost?"host":"guest";
+        // Interactivity gating
+        const mine=isHost?'host':'guest';
         const chooser = d.awaitingWordBy || null;
-        const isChooser = chooser && chooser===mine;
-
-        // Enable letters only if: not over, not awaiting word, and it's my turn
         const myTurnActive = (!d.over && !chooser && d.turn===mine);
         setAllInteractiveDisabled(!myTurnActive);
 
-        // If awaiting a word: only chooser sees enabled button; others locked
+        // Result + chooser flow
         if(chooser){
-          newWordBtn.classList.remove("hidden");
-          newWordBtn.disabled = !isChooser;
-          if(!isChooser){
-            setAllInteractiveDisabled(true);
-            addChat({name:"System", text:(lang==="sv")?T.sv.chooserOnly:T.en.chooserOnly, ts:Date.now()});
-          }
-        }else{
-          newWordBtn.classList.add("hidden");
+          newWordBtn.classList.remove('hidden');
+          newWordBtn.disabled = !(chooser===mine);
+        } else {
+          newWordBtn.classList.add('hidden');
         }
 
-        // On round end, freeze letters
         if(d.over){
           setAllInteractiveDisabled(true);
           if(d.winner){
-            addChat({name:"System",
-              text:(d.winner==="host")?((lang==="sv")?T.sv.hostWon:T.en.hostWon):((lang==="sv")?T.sv.guestWon:T.en.guestWon),
-              ts:Date.now()
-            })
+            const msg = (d.winner==='host') ? ((lang==='sv')?T.sv.hostWon:T.en.hostWon) : ((lang==='sv')?T.sv.guestWon:T.en.guestWon);
+            addChat({name:"System", text:msg, ts:Date.now()});
+            showResultOverlay(d.word, d.winner);
           }
+        } else {
+          resultOverlay.classList.remove('show');
         }
-      })
+      });
     }
 
-    /* ---------- New word (chooser only) ---------- */
+    /* ---------------- New word (chooser only) ---------------- */
     newWordBtn.onclick=async()=>{
-      const s=await db.ref("games/"+gameId).get(),d=s.val(); if(!d) return;
-      if(!d.over && !d.awaitingWordBy) return alert((lang==="sv")?T.sv.roundNotOver:T.en.roundNotOver);
-      const mine=isHost?"host":"guest";
-      if(d.awaitingWordBy!==mine) return alert((lang==="sv")?T.sv.chooserOnly:T.en.chooserOnly);
-
+      const s=await db.ref("games/"+gameId).get(), d=s.val(); if(!d) return;
+      if(!d.over && !d.awaitingWordBy) return alert((lang==='sv')?T.sv.roundNotOver:T.en.roundNotOver);
+      const mine=isHost?'host':'guest';
+      if(d.awaitingWordBy!==mine) return alert((lang==='sv')?T.sv.chooserOnly:T.en.chooserOnly);
       const nw=(prompt(T[lang].enterWord)||"").toUpperCase();
       if(!/^[A-ZÅÄÖ]+$/.test(nw)) return;
-
-      const nextTurn = (mine==="host")?"guest":"host";
+      const nextTurn = (mine==='host')?'guest':'host';
       await db.ref("games/"+gameId).update({
-        word:nw,guesses:[],wrong:0,over:!1,winner:null,
+        word:nw,guesses:[],wrong:0,over:false,winner:null,
         turn:nextTurn, roundStartMs:(timerSeconds>0?Date.now():0),
         awaitingWordBy:null
       });
-      newWordBtn.classList.add("hidden");
+      resultOverlay.classList.remove('show');
+      newWordBtn.classList.add('hidden');
     };
 
-    /* ---------- Timer controls ---------- */
-    timerOpen.onclick=()=>{timerConfig.classList.remove("hidden");timerOpen.classList.add("hidden")};
-    timerCancel.onclick=()=>{timerConfig.classList.add("hidden");timerOpen.classList.remove("hidden")};
+    /* ---------------- Timer controls ---------------- */
+    timerOpen.onclick=()=>{ timerConfig.classList.remove('hidden'); timerOpen.classList.add('hidden') };
+    timerCancel.onclick=()=>{ timerConfig.classList.add('hidden'); timerOpen.classList.remove('hidden') };
     timerConfirm.onclick=async()=>{
       const v=Math.max(0,Math.min(100,Number(timerInput.value||0)));
       await db.ref("games/"+gameId+"/settings").update({timerSeconds:v});
       await db.ref("games/"+gameId).update({roundStartMs:firebase.database.ServerValue.TIMESTAMP});
-      timerConfig.classList.add("hidden")
+      timerConfig.classList.add('hidden');
     };
     timerOff.onclick=async()=>{
       await db.ref("games/"+gameId+"/settings").update({timerSeconds:0});
       await db.ref("games/"+gameId).update({roundStartMs:0});
-      timerConfig.classList.add("hidden");timerOpen.classList.remove("hidden")
+      timerConfig.classList.add('hidden'); timerOpen.classList.remove('hidden');
     };
 
-    /* ---------- Load ---------- */
-    window.addEventListener("load",()=>{
-      langGlobal.value = lang;
-      applyLang();
+    /* ---------------- Build UI ---------------- */
+    function updateShare(){ const L=T[lang]; const code=gameCode()||"—"; shareEl.innerHTML=`${L.share} <span class="codeChip">${code}</span>` }
+    function updateShareAndAll(){ updateShare(); resizeCanvas(); buildLetters() }
+
+    function init(){
+      // Intro stinger
+      setTimeout(()=> stinger.classList.add('out'), 1000);
+      setTimeout(()=> stinger.style.display='none', 1700);
+
+      // Background
+      initParticles(); tickParticles();
+
+      // i18n init
+      langGlobal.value=lang; langInSettings.value=lang; applyLang();
+
+      // letters
+      buildLetters(); lettersEl.querySelector('button')?.focus();
+
+      updateShareText(); resizeCanvas();
 
       if(!deepLinkGame){
-        startDiv.classList.remove("hidden");
-        gameDiv.classList.add("hidden");
+        startDiv.classList.remove('hidden');
+        gameDiv.classList.add('hidden');
       }
-      updateShareText();
-      resizeCanvas()
-    });
+    }
+
+    /* ---------------- Start ---------------- */
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>
