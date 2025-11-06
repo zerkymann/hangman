@@ -889,7 +889,7 @@
     function listenGame(){
       if(!gameId) return;
       db.ref("games/"+gameId+"/chat").limitToLast(50).on("child_added",s=>addChat(s.val()));
-      db.ref("games/"+gameId).on("value", snap=>{
+      db.ref("games/" + gameId).on("value", snap => {
         const d=snap.val(); if(!d) return;
 
         updateLobby(d.players||{}, d.presence||{});
